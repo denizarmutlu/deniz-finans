@@ -67,7 +67,15 @@ final class DHF_Kalem {
 		if ( ! $set ) {
 			return false;
 		}
-		return false !== $wpdb->update( DHF_Schema::table( 'kalem' ), $set, [ 'id' => $id ], $fmt, [ '%d' ] );
+		$eski = isset( $set['etki_profili'] ) ? self::bul( $id ) : null;
+		$ok   = false !== $wpdb->update( DHF_Schema::table( 'kalem' ), $set, [ 'id' => $id ], $fmt, [ '%d' ] );
+
+		// Etki profili değişince bu kalemin defterdeki satırları yeni profille yeniden hesaplanır
+		// (kesinleşmiş aylar hariç — onlar kilitli). Yoksa eski satırlar eski kuralla sayılmaya devam eder.
+		if ( $ok && $eski && (string) $eski->etki_profili !== (string) $set['etki_profili'] ) {
+			DHF_Islem::etkileri_yenile( $id );
+		}
+		return $ok;
 	}
 
 	/**

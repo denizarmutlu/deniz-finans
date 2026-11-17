@@ -324,6 +324,28 @@ final class DHF_Islem {
 		return true;
 	}
 
+	/**
+	 * Bir kalemin açık aylardaki satırlarının etkilerini kalemin güncel profiliyle yeniden üretir.
+	 * @return int yeniden hesaplanan satır sayısı
+	 */
+	public static function etkileri_yenile( int $kalem_id ): int {
+		global $wpdb;
+		$i = DHF_Schema::table( 'islem' );
+		$d = DHF_Schema::table( 'donem' );
+		$k = DHF_Kalem::bul( $kalem_id );
+		if ( ! $k ) {
+			return 0;
+		}
+		$rows = $wpdb->get_results( $wpdb->prepare(
+			"SELECT s.id, s.tutar, s.durum FROM {$i} s INNER JOIN {$d} dn ON dn.id = s.donem_id
+			 WHERE s.kalem_id = %d AND dn.durum <> 'kesinlesti'", $kalem_id
+		) );
+		foreach ( $rows as $r ) {
+			DHF_Etki::yaz( (int) $r->id, (string) $k->etki_profili, 'gerceklesmedi' === $r->durum ? 0.0 : (float) $r->tutar );
+		}
+		return count( $rows );
+	}
+
 	/* ---------------------------------------------------------------- */
 	/* Toplamlar — hepsi hesaplanır, hiçbiri saklanmaz                   */
 	/* ---------------------------------------------------------------- */
