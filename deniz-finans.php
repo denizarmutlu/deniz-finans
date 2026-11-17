@@ -3,7 +3,7 @@
  * Plugin Name:       Deniz Finans
  * Plugin URI:        https://github.com/denizarmutlu/deniz-finans
  * Description:       Kişisel gelir-gider, borç, yatırım ve bilanço takibi. Yalnızca yönetici erişimi; ön yüzde hiçbir çıktı üretmez.
- * Version:           0.2.0
+ * Version:           0.3.0
  * Requires at least: 6.0
  * Requires PHP:      8.0
  * Author:            Deniz Armutlu
@@ -17,8 +17,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'DHF_VERSION', '0.2.0' );
-define( 'DHF_DB_VERSION', 2 );
+define( 'DHF_VERSION', '0.3.0' );
+define( 'DHF_DB_VERSION', 3 );
 define( 'DHF_FILE', __FILE__ );
 define( 'DHF_DIR', plugin_dir_path( __FILE__ ) );
 define( 'DHF_URL', plugin_dir_url( __FILE__ ) );
@@ -31,9 +31,13 @@ require_once DHF_DIR . 'includes/class-dhf-caps.php';
 require_once DHF_DIR . 'includes/class-dhf-etki.php';
 require_once DHF_DIR . 'includes/class-dhf-kalem.php';
 require_once DHF_DIR . 'includes/class-dhf-islem.php';
+require_once DHF_DIR . 'includes/class-dhf-ayristirici.php';
+require_once DHF_DIR . 'includes/class-dhf-aktarim.php';
 require_once DHF_DIR . 'includes/class-dhf-seed.php';
 require_once DHF_DIR . 'includes/screens/class-dhf-screen-hareketler.php';
 require_once DHF_DIR . 'includes/screens/class-dhf-screen-kalemler.php';
+require_once DHF_DIR . 'includes/screens/class-dhf-screen-aktarim.php';
+require_once DHF_DIR . 'includes/screens/class-dhf-screen-hesaplar.php';
 require_once DHF_DIR . 'includes/class-dhf-admin.php';
 
 register_activation_hook( __FILE__, static function (): void {
@@ -41,6 +45,7 @@ register_activation_hook( __FILE__, static function (): void {
 	DHF_Caps::grant_to_current_admin();
 	DHF_Seed::run_once();
 	DHF_Seed::kalemler_once();
+	DHF_Aktarim::eslesme_seed();
 } );
 
 register_deactivation_hook( __FILE__, static function (): void {
@@ -54,6 +59,8 @@ add_action( 'plugins_loaded', static function (): void {
 		DHF_Schema::install();
 		// 0.1'den yükseltenlerde tanımlar var ama kalem sözlüğü yok.
 		DHF_Seed::kalemler_once();
+		// 0.3: kalem sözlüğündeki varyantlar eşleştirme tablosuna taşınır.
+		DHF_Aktarim::eslesme_seed();
 	}
 	new DHF_Admin();
 } );

@@ -83,7 +83,8 @@ final class DHF_Screen_Kalemler {
 		echo '<input type="hidden" name="filtre" value="' . esc_attr( $filtre ) . '">';
 
 		echo '<table class="widefat striped"><thead><tr>';
-		foreach ( [ 'Kalem', 'Tür / Kategori', 'Tekrar', 'Gün', 'Varsayılan tutar', 'Ödeme şekli', 'Etki', 'Aktif' ] as $h ) {
+		$hesaplar = DHF_Screen_Hesaplar::hepsi( true );
+		foreach ( [ 'Kalem', 'Tür / Kategori', 'Tekrar', 'Gün', 'Varsayılan tutar', 'Ödeme şekli', 'Hesap', 'Etki', 'Aktif' ] as $h ) {
 			echo '<th>' . esc_html( $h ) . '</th>';
 		}
 		echo '</tr></thead><tbody>';
@@ -92,7 +93,7 @@ final class DHF_Screen_Kalemler {
 		foreach ( $kalemler as $k ) {
 			$grup = $k->tur . ' · ' . ( $k->kategori_ad ?: '—' );
 			if ( $grup !== $son_kategori ) {
-				printf( '<tr><th colspan="8" style="background:#f6f7f7">%s</th></tr>', esc_html( $grup ) );
+				printf( '<tr><th colspan="9" style="background:#f6f7f7">%s</th></tr>', esc_html( $grup ) );
 				$son_kategori = $grup;
 			}
 
@@ -122,6 +123,13 @@ final class DHF_Screen_Kalemler {
 			foreach ( DHF_Kalem::ODEME as $deger => $etiket ) {
 				printf( '<option value="%s"%s>%s</option>',
 					esc_attr( $deger ), selected( $k->odeme_sekli, $deger, false ), esc_html( $etiket ) );
+			}
+			echo '</select></td>';
+
+			printf( '<td><select name="k[%d][hesap_id]"><option value="">—</option>', $id );
+			foreach ( $hesaplar as $h ) {
+				printf( '<option value="%d"%s>%s</option>', (int) $h->id, selected( (int) $k->hesap_id, (int) $h->id, false ),
+					esc_html( $h->kurum_ad . ' · ' . $h->ad ) );
 			}
 			echo '</select></td>';
 
@@ -177,6 +185,7 @@ final class DHF_Screen_Kalemler {
 			if ( $gun >= 1 && $gun <= 31 ) {
 				$veri['varsayilan_gun'] = $gun;
 			}
+			$veri['hesap_id'] = absint( $alanlar['hesap_id'] ?? 0 ) ?: '';
 			$veri['varsayilan_tutar'] = ( '' === $tutar ) ? '' : (float) str_replace( ',', '.', $tutar );
 
 			$sayac += DHF_Kalem::guncelle( $id, $veri ) ? 1 : 0;

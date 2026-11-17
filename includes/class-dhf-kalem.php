@@ -53,7 +53,7 @@ final class DHF_Kalem {
 		$izinli = [
 			'ad' => '%s', 'tekrar_tipi' => '%s', 'varsayilan_gun' => '%d',
 			'varsayilan_tutar' => '%f', 'odeme_sekli' => '%s', 'etki_profili' => '%s',
-			'kalan_taksit' => '%d', 'bitis_tarihi' => '%s', 'not_metni' => '%s', 'aktif' => '%d',
+			'kalan_taksit' => '%d', 'hesap_id' => '%d', 'bitis_tarihi' => '%s', 'not_metni' => '%s', 'aktif' => '%d',
 		];
 
 		$set = $fmt = [];

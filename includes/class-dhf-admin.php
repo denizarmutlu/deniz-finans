@@ -25,6 +25,10 @@ final class DHF_Admin {
 		add_action( 'admin_post_dhf_taslak', [ DHF_Screen_Hareketler::class, 'handle_taslak' ] );
 		add_action( 'admin_post_dhf_satirlar', [ DHF_Screen_Hareketler::class, 'handle_satirlar' ] );
 		add_action( 'admin_post_dhf_kalemler', [ DHF_Screen_Kalemler::class, 'handle' ] );
+		add_action( 'admin_post_dhf_aktarim_yukle', [ DHF_Screen_Aktarim::class, 'handle_yukle' ] );
+		add_action( 'admin_post_dhf_aktarim_karar', [ DHF_Screen_Aktarim::class, 'handle_karar' ] );
+		add_action( 'admin_post_dhf_aktarim_sil', [ DHF_Screen_Aktarim::class, 'handle_sil' ] );
+		add_action( 'admin_post_dhf_hesap', [ DHF_Screen_Hesaplar::class, 'handle' ] );
 	}
 
 	public function menu(): void {
@@ -126,12 +130,7 @@ final class DHF_Admin {
 	}
 
 	public function page_aktarim(): void {
-		$this->stub( __( 'Aktarım', 'deniz-finans' ), '0.3 / 0.6', [
-			'CSV yükleme, 2025 ve 2026 için ayrı eşleştirme profilleri',
-			'Önizleme → doğrulama → onay → yazma',
-			'İnceleme kuyruğu: hatalı tarihler, mükerrer satırlar, çözülemeyen kurumlar',
-			'Sheets\'teki toplam satırları okunmaz — toplamlar yeniden hesaplanır',
-		] );
+		DHF_Screen_Aktarim::render();
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -189,17 +188,17 @@ final class DHF_Admin {
 				) )
 				: esc_html( sprintf( __( '%d tablo kurulu', 'deniz-finans' ), count( $durum ) ) )
 		);
-		echo '</tbody></table>';
-
 		printf(
 			'<tr><td><strong>%s</strong></td><td>%s</td></tr>',
 			esc_html__( 'Kalem sözlüğü', 'deniz-finans' ),
 			esc_html( sprintf(
-				/* translators: %d: kalem sayısı */
-				__( '%d kalem yüklendi', 'deniz-finans' ),
-				(int) get_option( 'dhf_kalem_seed_done', 0 )
+				/* translators: 1: kalem sayısı 2: eşleştirme sayısı */
+				__( '%1$d kalem · %2$d açıklama eşleştirmesi', 'deniz-finans' ),
+				count( DHF_Kalem::hepsi() ),
+				(int) $GLOBALS['wpdb']->get_var( 'SELECT COUNT(*) FROM ' . DHF_Schema::table( 'kalem_eslesme' ) )
 			) )
 		);
+		echo '</tbody></table>';
 
 		echo '<h3>' . esc_html__( 'Tablolar', 'deniz-finans' ) . '</h3>';
 		echo '<table class="widefat striped" style="max-width:720px"><thead><tr>';
@@ -218,6 +217,8 @@ final class DHF_Admin {
 			);
 		}
 		echo '</tbody></table>';
+
+		DHF_Screen_Hesaplar::render_bolum();
 
 		/* Yetki */
 		echo '<h2>' . esc_html__( 'Erişim yetkisi', 'deniz-finans' ) . '</h2>';
@@ -262,7 +263,7 @@ final class DHF_Admin {
 		echo '<p>' . esc_html__( 'Bunlar eklentiden bağımsız, sitede yapılması gereken işler (plan §8):', 'deniz-finans' ) . '</p>';
 		echo '<ul class="ul-disc">';
 		foreach ( [
-			__( 'Hangi CleanTalk eklentisi kurulu — anti-spam mı, güvenlik mi? İkisi birlikte çalıştırılmamalı.', 'deniz-finans' ),
+			__( 'Tek güvenlik eklentisi çalışmalı (CleanTalk Security ya da Wordfence — ikisi birlikte değil).', 'deniz-finans' ),
 			__( 'Admin girişinde iki faktörlü doğrulama (TOTP, SMS değil) — yedek kodlar kaydedilmeli.', 'deniz-finans' ),
 			__( 'UpdraftPlus yedeği bu özel tabloları kapsıyor mu? Geri yükleme bir kez test edilmeli.', 'deniz-finans' ),
 		] as $madde ) {

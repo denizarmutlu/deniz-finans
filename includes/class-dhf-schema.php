@@ -372,6 +372,11 @@ final class DHF_Schema {
 			kaynak varchar(20) NOT NULL,
 			dosya_adi varchar(255) DEFAULT NULL,
 			sekme varchar(120) DEFAULT NULL,
+			profil varchar(20) DEFAULT NULL,
+			filtre_yil smallint(4) unsigned DEFAULT NULL,
+			filtre_ay tinyint(2) unsigned DEFAULT NULL,
+			yazilan int(11) NOT NULL DEFAULT 0,
+			onay_tarihi datetime DEFAULT NULL,
 			kullanici_id bigint(20) unsigned DEFAULT NULL,
 			ozet_hash char(64) DEFAULT NULL,
 			durum varchar(20) NOT NULL DEFAULT 'onizleme',
@@ -385,13 +390,35 @@ final class DHF_Schema {
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			aktarim_id bigint(20) unsigned NOT NULL,
 			kaynak_satir_no int(11) DEFAULT NULL,
+			satir_anahtari char(32) DEFAULT NULL,
 			ham_veri longtext DEFAULT NULL,
+			tarih date DEFAULT NULL,
+			tur varchar(20) DEFAULT NULL,
+			kategori_id bigint(20) unsigned DEFAULT NULL,
+			tutar decimal(18,2) DEFAULT NULL,
+			kalem_id bigint(20) unsigned DEFAULT NULL,
 			eslesen_islem_id bigint(20) unsigned DEFAULT NULL,
 			hata varchar(255) DEFAULT NULL,
 			onay_durumu varchar(20) NOT NULL DEFAULT 'bekliyor',
+			karar varchar(20) DEFAULT NULL,
+			gerekce varchar(255) DEFAULT NULL,
 			PRIMARY KEY  (id),
 			KEY aktarim_id (aktarim_id),
+			KEY satir_anahtari (satir_anahtari),
 			KEY onay_durumu (onay_durumu)
+		) {$charset};";
+
+		// Defterdeki serbest metin -> kalem eşleştirmesi. Aktarımda bir kez seçilen eşleşme
+		// hatırlanır; "İgdaş doğalgaz hb" bir daha sorulmaz (0.3).
+		$sql[] = "CREATE TABLE {$t( 'kalem_eslesme' )} (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			metin varchar(190) NOT NULL,
+			tur varchar(20) NOT NULL,
+			kalem_id bigint(20) unsigned NOT NULL,
+			kaynak varchar(20) NOT NULL DEFAULT 'elle',
+			PRIMARY KEY  (id),
+			UNIQUE KEY metin_tur (metin,tur),
+			KEY kalem_id (kalem_id)
 		) {$charset};";
 
 		// Yalnızca kesinleşmiş döneme dokunulduğunda yazar (§2.4).
@@ -439,7 +466,7 @@ final class DHF_Schema {
 			'borc', 'borc_foto',
 			'varlik', 'varlik_foto', 'bes_sozlesme', 'bes_katki', 'fon_degisim', 'gosterge',
 			'fiziksel_varlik', 'fiziksel_varlik_deger', 'kira_donemi',
-			'aktarim', 'aktarim_satir', 'log',
+			'aktarim', 'aktarim_satir', 'kalem_eslesme', 'log',
 		];
 	}
 }
