@@ -148,6 +148,7 @@ final class DHF_Schema {
 			kopya_kaynak_id bigint(20) unsigned DEFAULT NULL,
 			fiziksel_varlik_id bigint(20) unsigned DEFAULT NULL,
 			tekil_anahtar char(32) DEFAULT NULL,
+			dis_ref varchar(40) DEFAULT NULL,
 			PRIMARY KEY  (id),
 			KEY tarih (tarih),
 			KEY tur_tarih (tur,tarih),
@@ -155,6 +156,7 @@ final class DHF_Schema {
 			KEY kalem_id (kalem_id),
 			KEY durum (durum),
 			KEY tekil_anahtar (tekil_anahtar),
+			KEY dis_ref (dis_ref),
 			KEY fiziksel_varlik_id (fiziksel_varlik_id)
 		) {$charset};";
 

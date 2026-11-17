@@ -283,8 +283,8 @@ final class DHF_Islem {
 			$durum = 'taslak';
 		}
 		$donem = DHF_Donem::bul( (int) $satir->donem_id );
-		if ( ! DHF_Donem::duzenlenebilir( $donem ) ) {
-			return false;
+		if ( ! DHF_Donem::duzenlenebilir( $donem ) || DHF_Deniz_Hesap::KAYNAK === $satir->kaynak ) {
+			return false; // Deniz Hesap satırı orada düzenlenir
 		}
 		$not   = ( null === $not || '' === $not ) ? null : $not;
 		$tutar = round( $tutar, 2 );
@@ -380,7 +380,7 @@ final class DHF_Islem {
 		return (int) $wpdb->get_var( $wpdb->prepare(
 			"SELECT COUNT(*) FROM (
 				SELECT kalem_id, tutar FROM {$i}
-				WHERE donem_id = %d AND kalem_id IS NOT NULL AND tutar > 0
+				WHERE donem_id = %d AND kalem_id IS NOT NULL AND tutar > 0 AND kaynak <> 'deniz_hesap'
 				GROUP BY kalem_id, tutar HAVING COUNT(*) > 1
 			) x",
 			$donem_id

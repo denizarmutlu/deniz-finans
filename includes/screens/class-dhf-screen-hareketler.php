@@ -24,6 +24,8 @@ final class DHF_Screen_Hareketler {
 
 		// Ayı görüntülemek dönemi oluşturmaz; dönem "Ayı oluştur" ya da ilk satırla doğar.
 		$donem    = DHF_Islem::donem( $yil, $ay, false );
+		// Web işi Deniz Hesap'tan yansıtılır (§5.12). Açık ayda her açılışta eşitlenir.
+		$hk = $donem ? DHF_Deniz_Hesap::esitle( $yil, $ay ) : null;
 		$satirlar = $donem ? DHF_Islem::satirlar( (int) $donem->id ) : [];
 		$gecen    = DHF_Islem::gecen_ay( $yil, $ay );
 		$acik     = DHF_Donem::duzenlenebilir( $donem );
@@ -42,6 +44,13 @@ final class DHF_Screen_Hareketler {
 
 		$eksikler = $acik ? DHF_Islem::eksikler( $yil, $ay ) : [];
 		self::durum_seridi( $yil, $ay, $donem, count( $satirlar ), count( $eksikler ) );
+		if ( $hk && $hk['kilitli'] && $hk['fark'] ) {
+			printf( '<div class="notice notice-warning"><p>%s</p></div>', esc_html( sprintf(
+				__( 'Deniz Hesap\'ta bu aya ait %d hareket kesinleştirmeden sonra değişmiş. Yansıtmak için ayı gerekçeyle yeniden aç.', 'deniz-finans' ), $hk['fark'] ) ) );
+		} elseif ( $hk && ( $hk['eklendi'] || $hk['guncellendi'] || $hk['silindi'] ) ) {
+			printf( '<div class="notice notice-info is-dismissible"><p>%s</p></div>', esc_html( sprintf(
+				__( 'Deniz Hesap\'tan güncellendi: %1$d eklendi, %2$d değişti, %3$d kaldırıldı.', 'deniz-finans' ), $hk['eklendi'], $hk['guncellendi'], $hk['silindi'] ) ) );
+		}
 		self::donem_dugmeleri( $yil, $ay, $donem );
 		if ( $eksikler ) {
 			self::eksikler( $yil, $ay, $eksikler );
@@ -223,15 +232,20 @@ final class DHF_Screen_Hareketler {
 			$mukerrer = (float) $s->tutar > 0 && isset( $gorulen[ $anahtar ] );
 			$gorulen[ $anahtar ] = true;
 
+			$ayna  = DHF_Deniz_Hesap::KAYNAK === $s->kaynak;
+			$mukerrer = $mukerrer && ! $ayna;
 			$sinif = $bekliyor ? 'dhf-bekliyor' : '';
 			$sinif .= $mukerrer ? ' dhf-mukerrer' : '';
+			$sinif .= $ayna ? ' dhf-ayna' : '';
+			$kilit_s = ( $acik && ! $ayna ) ? '' : ' disabled';
 
 			printf( '<tr class="%s">', esc_attr( trim( $sinif ) ) );
 			printf( '<td>%s</td>', esc_html( mysql2date( 'd.m', $s->tarih ) ) );
 			printf( '<td><strong>%s</strong>%s</td>',
 				esc_html( $s->kalem_ad ?: $s->aciklama ),
-				'otomatik_talimat' === $s->odeme_sekli
-					? ' <span class="dhf-etiket">otomatik</span>' : ''
+				( 'otomatik_talimat' === $s->odeme_sekli
+					? ' <span class="dhf-etiket">otomatik</span>' : '' )
+				. ( $ayna ? ' <span class="dhf-etiket dhf-etiket-hk" title="' . esc_attr( (string) $s->aciklama ) . '">Deniz Hesap</span><br><small class="dhf-soluk">' . esc_html( (string) $s->aciklama ) . '</small>' : '' )
 			);
 			printf( '<td>%s</td>', esc_html( (string) $s->kategori_ad ) );
 
@@ -244,10 +258,10 @@ final class DHF_Screen_Hareketler {
 				(int) $s->id,
 				esc_attr( 0.0 === (float) $s->tutar ? '' : (string) $s->tutar ),
 				$bekliyor ? ' dhf-bos' : '',
-				$kilit
+				$kilit_s
 			);
 
-			printf( '<td><select name="satir[%d][durum]"%s>', (int) $s->id, $kilit );
+			printf( '<td><select name="satir[%d][durum]"%s>', (int) $s->id, $kilit_s );
 			foreach ( DHF_Islem::DURUMLAR as $k => $v ) {
 				printf( '<option value="%s"%s>%s</option>',
 					esc_attr( $k ), selected( $s->durum, $k, false ), esc_html( $v ) );
@@ -259,7 +273,7 @@ final class DHF_Screen_Hareketler {
 				esc_html( DHF_Etki::ozet( (string) $s->etki_profili ) ) );
 
 			printf( '<td><input type="text" name="satir[%d][not]" value="%s" class="dhf-not"%s></td>',
-				(int) $s->id, esc_attr( (string) $s->not_metni ), $kilit );
+				(int) $s->id, esc_attr( (string) $s->not_metni ), $kilit_s );
 			echo '</tr>';
 		}
 		echo '</tbody></table>';
@@ -427,6 +441,7 @@ final class DHF_Screen_Hareketler {
 		.dhf-ekle-satir,.dhf-yeni-kalem{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:10px}
 		.dhf-yeni-kalem{background:#f6f7f7;padding:8px 10px}
 		.dhf-mukerrer-uyari{color:#b32d2e;font-weight:600}
+		.dhf-tablo tr.dhf-ayna{background:#f0f6fc}.dhf-etiket-hk{background:#dbeafe;color:#1e40af}
 		.dhf-kayit{margin:16px 0;max-width:960px}.dhf-kayit summary{cursor:pointer;color:#2271b1}
 		@media (max-width:782px){.dhf-tablo th:nth-child(3),.dhf-tablo td:nth-child(3),.dhf-tablo th:nth-child(7),.dhf-tablo td:nth-child(7){display:none}.dhf-tutar{width:96px}}
 		</style>';
@@ -444,6 +459,7 @@ final class DHF_Screen_Hareketler {
 		$ay  = isset( $_POST['ay'] ) ? absint( wp_unslash( $_POST['ay'] ) ) : 0;
 
 		$sonuc = DHF_Islem::taslak_uret( $yil, $ay );
+		DHF_Deniz_Hesap::esitle( $yil, $ay );
 
 		self::geri( $yil, $ay, 'taslak_uretildi', $sonuc['eklendi'], $sonuc['atlandi'] );
 	}

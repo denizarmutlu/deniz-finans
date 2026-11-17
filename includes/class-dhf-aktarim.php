@@ -32,6 +32,7 @@ final class DHF_Aktarim {
 		'mukerrer'      => 'Dosyada birebir aynı satır var',
 		'kategori_yok'  => 'Kategori tanımlı değil',
 		'defterde_var'  => 'Defterde aynı tarih, kalem ve tutarla bir kayıt zaten var',
+		'deniz_hesap'   => 'Web işi Deniz Hesap\'tan okunuyor; Sheets satırı alınmaz',
 	];
 
 	/* ---------------------------------------------------------------- */
@@ -228,6 +229,9 @@ final class DHF_Aktarim {
 			}
 			if ( $s['tur'] && ! $kategori_id ) {
 				$hatalar[] = 'kategori_yok';
+			}
+			if ( DHF_Deniz_Hesap::aynalanan_kalem( $kalem_id ?: $oneri ) ) {
+				$hatalar[] = 'deniz_hesap';
 			}
 			if ( ! $hatalar && $s['tarih'] && null !== $s['tutar'] && self::defterde_var( $s['tarih'], $s['tur'], $s['ham']['kategori'], $s['ham']['aciklama'], $s['tutar'] ) ) {
 				$hatalar[] = 'defterde_var';
