@@ -88,7 +88,7 @@ final class DHF_Screen_Hareketler {
 		$mesajlar = [
 			'taslak_uretildi' => sprintf(
 				/* translators: 1: eklenen 2: atlanan */
-				__( 'Taslak üretildi: %1$d satır eklendi, %2$d kalem zaten vardı.', 'deniz-finans' ),
+				__( 'Taslak üretildi: %1$d satır eklendi, %2$d alt kategori zaten vardı.', 'deniz-finans' ),
 				$n, $m
 			),
 			'kaydedildi' => sprintf(
@@ -97,7 +97,7 @@ final class DHF_Screen_Hareketler {
 				$n
 			),
 			'eklendi'    => __( 'Satır eklendi.', 'deniz-finans' ),
-			'eksik_eklendi' => sprintf( __( '%d kalem bu aya eklendi; tutarlarını gir.', 'deniz-finans' ), $n ),
+			'eksik_eklendi' => sprintf( __( '%d satır bu aya eklendi; tutarlarını gir.', 'deniz-finans' ), $n ),
 			'durum'      => __( 'Ayın durumu değişti.', 'deniz-finans' ),
 		];
 		if ( 'hata' === $key ) {
@@ -115,7 +115,7 @@ final class DHF_Screen_Hareketler {
 		$beklenen = count( DHF_Kalem::donem_icin( $yil, $ay ) );
 		echo '<div class="notice notice-info"><p>';
 		printf(
-			esc_html__( 'Bu ay henüz oluşturulmadı. Kalem sözlüğünde bu ay için beklenen %d kalem var.', 'deniz-finans' ),
+			esc_html__( 'Bu ay henüz oluşturulmadı. Bu ay için beklenen %d alt kategori var.', 'deniz-finans' ),
 			(int) $beklenen
 		);
 		echo '</p></div>';
@@ -135,12 +135,12 @@ final class DHF_Screen_Hareketler {
 		echo '<div class="dhf-serit">';
 		printf( '<span><strong>%d</strong> satır</span>', $toplam );
 		if ( $bekleyen ) {
-			printf( '<span class="dhf-uyari"><strong>%d</strong> kalem tutar bekliyor</span>', $bekleyen );
+			printf( '<span class="dhf-uyari"><strong>%d</strong> satır tutar bekliyor</span>', $bekleyen );
 		} else {
 			echo '<span class="dhf-tamam">tüm tutarlar girildi</span>';
 		}
 		if ( $eksik ) {
-			printf( '<span class="dhf-uyari"><a href="#dhf-eksikler"><strong>%d</strong> kalem geçen ay vardı, bu ay yok</a></span>', $eksik );
+			printf( '<span class="dhf-uyari"><a href="#dhf-eksikler"><strong>%d</strong> alt kategori geçen ay vardı, bu ay yok</a></span>', $eksik );
 		}
 		if ( $mukerrer ) {
 			printf( '<span class="dhf-hata"><strong>%d</strong> mükerrer şüphesi</span>', $mukerrer );
@@ -169,7 +169,7 @@ final class DHF_Screen_Hareketler {
 			) ) );
 		} else {
 			echo '<a class="button" href="' . esc_url( wp_nonce_url( add_query_arg( [ 'action' => 'dhf_taslak_eksik', 'yil' => $yil, 'ay' => $ay ], admin_url( 'admin-post.php' ) ), 'dhf_taslak_eksik' ) ) . '">'
-				. esc_html__( 'Sözlükten eksik kalemleri ekle', 'deniz-finans' ) . '</a> ';
+				. esc_html__( 'Eksik alt kategorileri ekle', 'deniz-finans' ) . '</a> ';
 		}
 		foreach ( $gecisler as $hedef => $etiket ) {
 			printf( '<button type="submit" name="hedef" value="%s" class="button%s">%s</button> ',
@@ -211,7 +211,7 @@ final class DHF_Screen_Hareketler {
 		printf( '<input type="hidden" name="yil" value="%d"><input type="hidden" name="ay" value="%d">', $yil, $ay );
 
 		echo '<table class="widefat striped dhf-tablo"><thead><tr>';
-		foreach ( [ 'Tarih', 'Kalem', 'Kategori', 'Geçen ay', 'Tutar', 'Durum', 'Etki', 'Not' ] as $h ) {
+		foreach ( [ 'Tarih', 'Alt kategori', 'Kategori', 'Geçen ay', 'Tutar', 'Durum', 'Etki', 'Not' ] as $h ) {
 			echo '<th>' . esc_html( $h ) . '</th>';
 		}
 		echo '</tr></thead><tbody>';
@@ -296,7 +296,7 @@ final class DHF_Screen_Hareketler {
 		echo '<div class="dhf-ekle-satir">';
 		printf( '<label>%s<br><input type="date" name="tarih" value="%s" required></label>', esc_html__( 'Tarih', 'deniz-finans' ), esc_attr( $varsayilan ) );
 
-		echo '<label>' . esc_html__( 'Kalem', 'deniz-finans' ) . '<br><select name="kalem_id" class="dhf-kalem-sec">';
+		echo '<label>' . esc_html__( 'Alt kategori', 'deniz-finans' ) . '<br><select name="kalem_id" class="dhf-kalem-sec">';
 		echo '<option value="">— ' . esc_html__( 'seç', 'deniz-finans' ) . ' —</option>';
 		foreach ( $turler as $tur => $etiket ) {
 			printf( '<optgroup label="%s">', esc_attr( $etiket ) );
@@ -308,7 +308,7 @@ final class DHF_Screen_Hareketler {
 			}
 			echo '</optgroup>';
 		}
-		printf( '<option value="yeni"%s>+ %s</option>', selected( (string) ( $v['kalem_id'] ?? '' ), 'yeni', false ), esc_html__( 'Yeni kalem…', 'deniz-finans' ) );
+		printf( '<option value="yeni"%s>+ %s</option>', selected( (string) ( $v['kalem_id'] ?? '' ), 'yeni', false ), esc_html__( 'Yeni alt kategori…', 'deniz-finans' ) );
 		echo '</select></label>';
 
 		printf( '<label>%s<br><input type="number" step="0.01" min="0.01" name="tutar" value="%s" class="dhf-tutar" required></label>',
@@ -319,7 +319,7 @@ final class DHF_Screen_Hareketler {
 
 		// Yeni kalem paneli — yalnızca "Yeni kalem…" seçilince görünür.
 		echo '<div class="dhf-yeni-kalem"' . ( 'yeni' === ( $v['kalem_id'] ?? '' ) ? '' : ' hidden' ) . '>';
-		printf( '<label>%s<br><input type="text" name="yeni[ad]" value="%s"></label>', esc_html__( 'Kalem adı', 'deniz-finans' ), esc_attr( (string) ( $v['yeni']['ad'] ?? '' ) ) );
+		printf( '<label>%s<br><input type="text" name="yeni[ad]" value="%s"></label>', esc_html__( 'Alt kategori adı', 'deniz-finans' ), esc_attr( (string) ( $v['yeni']['ad'] ?? '' ) ) );
 		echo '<label>' . esc_html__( 'Kategori', 'deniz-finans' ) . '<br><select name="yeni[kategori_id]">';
 		foreach ( $kategoriler as $c ) {
 			printf( '<option value="%d"%s>%s · %s</option>', (int) $c->id, selected( (int) ( $v['yeni']['kategori_id'] ?? 0 ), (int) $c->id, false ),
@@ -395,7 +395,7 @@ final class DHF_Screen_Hareketler {
 		}
 		echo '</div>';
 		echo '<p class="dhf-soluk">' . esc_html__(
-			'Faiz ayrı duruyor: diğerlerinden farklı olarak karşılığında hiçbir şey alınmayan tek kalem. Kart ödemesi tüketime yazılmaz.',
+			'Faiz ayrı duruyor: diğerlerinden farklı olarak karşılığında hiçbir şey alınmayan tek gider. Kart ödemesi tüketime yazılmaz.',
 			'deniz-finans'
 		) . '</p>';
 	}

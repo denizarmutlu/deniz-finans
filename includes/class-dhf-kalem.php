@@ -79,11 +79,11 @@ final class DHF_Kalem {
 		global $wpdb;
 		$ad = trim( $ad );
 		if ( '' === $ad ) {
-			return new WP_Error( 'ad', 'Yeni kalemin adı boş.' );
+			return new WP_Error( 'ad', 'Yeni alt kategorinin adı boş.' );
 		}
 		$kat = $wpdb->get_row( $wpdb->prepare( 'SELECT id, tur FROM ' . DHF_Schema::table( 'kategori' ) . ' WHERE id = %d', $kategori_id ) );
 		if ( ! $kat ) {
-			return new WP_Error( 'kategori', 'Yeni kalem için kategori seçilmeli.' );
+			return new WP_Error( 'kategori', 'Yeni alt kategori için kategori seçilmeli.' );
 		}
 		if ( ! isset( self::TEKRAR[ $tekrar ] ) ) {
 			$tekrar = 'tek_seferlik';
@@ -110,7 +110,7 @@ final class DHF_Kalem {
 		if ( $id && class_exists( 'DHF_Aktarim' ) ) {
 			DHF_Aktarim::eslesme_ekle( $ad, (string) $kat->tur, $id );
 		}
-		return $id ?: new WP_Error( 'db', 'Kalem eklenemedi.' );
+		return $id ?: new WP_Error( 'db', 'Alt kategori eklenemedi.' );
 	}
 
 	/**

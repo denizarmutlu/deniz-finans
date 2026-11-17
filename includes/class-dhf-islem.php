@@ -164,7 +164,7 @@ final class DHF_Islem {
 		}
 		$k = DHF_Kalem::bul( (int) $v['kalem_id'] );
 		if ( ! $k ) {
-			return new WP_Error( 'kalem', 'Kalem seçilmedi.' );
+			return new WP_Error( 'kalem', 'Alt kategori seçilmedi.' );
 		}
 		$tutar = round( (float) $v['tutar'], 2 );
 		if ( $tutar <= 0 ) {

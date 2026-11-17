@@ -19,7 +19,7 @@ final class DHF_Screen_Aktarim {
 
 	private const DURUM_ETIKET = [
 		'hazir'     => [ 'Hazır', '#1a7f37' ],
-		'eslesmedi' => [ 'Kalem seç', '#b26200' ],
+		'eslesmedi' => [ 'Alt kategori seç', '#b26200' ],
 		'kuyruk'    => [ 'İnceleme', '#b32d2e' ],
 		'zaten_var' => [ 'Daha önce aktarıldı', '#646970' ],
 		'yazildi'   => [ 'Yazıldı', '#1a7f37' ],
@@ -183,7 +183,7 @@ final class DHF_Screen_Aktarim {
 		}
 
 		echo '<table class="widefat dhf-aktarim-tablo"><thead><tr>';
-		foreach ( [ 'Satır', 'Durum', 'Tarih', 'Kategori', 'Açıklama (kaynakta)', 'Tutar', 'Kalem', 'Etki', 'Karar / not' ] as $h ) {
+		foreach ( [ 'Satır', 'Durum', 'Tarih', 'Kategori', 'Açıklama (kaynakta)', 'Tutar', 'Alt kategori', 'Etki', 'Karar / not' ] as $h ) {
 			echo '<th>' . esc_html( $h ) . '</th>';
 		}
 		echo '</tr></thead><tbody>';
@@ -199,7 +199,7 @@ final class DHF_Screen_Aktarim {
 			echo ' ';
 			submit_button(
 				__( 'Kaydet ve deftere yaz', 'deniz-finans' ), 'primary', 'yaz', false,
-				$ozet['eksik_kalem'] ? [ 'title' => __( 'Önce kalemi seçilmeyen satırları tamamla', 'deniz-finans' ) ] : []
+				$ozet['eksik_kalem'] ? [ 'title' => __( 'Önce alt kategorisi seçilmeyen satırları tamamla', 'deniz-finans' ) ] : []
 			);
 			echo '</p></form>';
 
@@ -282,7 +282,7 @@ final class DHF_Screen_Aktarim {
 		if ( $duzenle && $kalemler ) {
 			$oneri = 'oneri' === $r->karar;
 			printf( '<select name="r[%d][kalem_id]"%s>', $id, $oneri ? ' class="dhf-oneri"' : '' );
-			echo '<option value="">' . esc_html__( '— kalem seç —', 'deniz-finans' ) . '</option>';
+			echo '<option value="">' . esc_html__( '— alt kategori seç —', 'deniz-finans' ) . '</option>';
 			foreach ( $kalemler as $k ) {
 				printf( '<option value="%d"%s>%s%s</option>', (int) $k->id, selected( (int) $r->kalem_id, (int) $k->id, false ),
 					esc_html( $k->ad ), (int) $k->aktif ? '' : ' (pasif)' );

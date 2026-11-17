@@ -40,7 +40,7 @@ final class DHF_Screen_Hesaplar {
 
 		echo '<h2 id="hesaplar">' . esc_html__( 'Hesaplar', 'deniz-finans' ) . '</h2>';
 		echo '<p class="description">' . esc_html__(
-			'Kalemler hesaba bağlanınca hesap bazlı raporlar 2026 geçmişi için de çalışır. Hesabı Kalemler ekranında kaleme bağla.',
+			'Alt kategoriler hesaba bağlanınca hesap bazlı raporlar 2026 geçmişi için de çalışır. Hesabı Alt kategoriler ekranında bağla.',
 			'deniz-finans'
 		) . '</p>';
 

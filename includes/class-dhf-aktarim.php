@@ -478,7 +478,7 @@ final class DHF_Aktarim {
 		$satirlar = self::satirlar( $aktarim_id );
 		$eksik    = array_filter( $satirlar, static fn( $r ): bool => 'eslesmedi' === $r->onay_durumu );
 		if ( $eksik ) {
-			return new WP_Error( 'eksik', sprintf( '%d satırın kalemi seçilmedi. Önce kalem seçin veya satırı kuyruğa alıp atlayın.', count( $eksik ) ) );
+			return new WP_Error( 'eksik', sprintf( '%d satırın alt kategorisi seçilmedi. Önce alt kategori seçin.', count( $eksik ) ) );
 		}
 
 		$islem_t = DHF_Schema::table( 'islem' );

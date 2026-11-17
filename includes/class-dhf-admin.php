@@ -49,7 +49,7 @@ final class DHF_Admin {
 		$pages = [
 			'dhf'            => [ __( 'Gösterge Paneli', 'deniz-finans' ), 'page_panel' ],
 			'dhf-hareketler' => [ __( 'Aylık Hareketler', 'deniz-finans' ), 'page_hareketler' ],
-			'dhf-kalemler'   => [ __( 'Kalemler', 'deniz-finans' ), 'page_kalemler' ],
+			'dhf-kalemler'   => [ __( 'Alt kategoriler', 'deniz-finans' ), 'page_kalemler' ],
 			'dhf-raporlar'   => [ __( 'Raporlar', 'deniz-finans' ), 'page_raporlar' ],
 			'dhf-borclar'    => [ __( 'Borçlar', 'deniz-finans' ), 'page_borclar' ],
 			'dhf-yatirimlar' => [ __( 'Yatırımlar', 'deniz-finans' ), 'page_yatirimlar' ],
@@ -194,10 +194,10 @@ final class DHF_Admin {
 		);
 		printf(
 			'<tr><td><strong>%s</strong></td><td>%s</td></tr>',
-			esc_html__( 'Kalem sözlüğü', 'deniz-finans' ),
+			esc_html__( 'Alt kategoriler', 'deniz-finans' ),
 			esc_html( sprintf(
 				/* translators: 1: kalem sayısı 2: eşleştirme sayısı */
-				__( '%1$d kalem · %2$d açıklama eşleştirmesi', 'deniz-finans' ),
+				__( '%1$d alt kategori · %2$d açıklama eşleştirmesi', 'deniz-finans' ),
 				count( DHF_Kalem::hepsi() ),
 				(int) $GLOBALS['wpdb']->get_var( 'SELECT COUNT(*) FROM ' . DHF_Schema::table( 'kalem_eslesme' ) )
 			) )

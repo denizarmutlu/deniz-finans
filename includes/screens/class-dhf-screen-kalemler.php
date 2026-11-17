@@ -30,9 +30,9 @@ final class DHF_Screen_Kalemler {
 		} ) );
 
 		echo '<div class="wrap">';
-		echo '<h1>' . esc_html__( 'Kalemler', 'deniz-finans' ) . '</h1>';
+		echo '<h1>' . esc_html__( 'Alt kategoriler', 'deniz-finans' ) . '</h1>';
 		echo '<p class="description">' . esc_html__(
-			'Aylık taslak bu sözlükten üretilir. Sabit kalemlerde tutar dolu gelir; değişken kalemlerde boş gelir ve "tutar bekliyor" olarak işaretlenir.',
+			'Her ay tekrar eden ödeme ve gelirlerin listesi; aylık taslak buradan üretilir. Sabit tutarlılar dolu gelir; tutarı değişkenler boş gelir ve "tutar bekliyor" olarak işaretlenir. Firma veya kişi adı alt kategori adına değil, satır notuna yazılır.',
 			'deniz-finans'
 		) . '</p>';
 
@@ -40,7 +40,7 @@ final class DHF_Screen_Kalemler {
 			$n = isset( $_GET['n'] ) ? absint( wp_unslash( $_GET['n'] ) ) : 0;
 			printf( '<div class="notice notice-success is-dismissible"><p>%s</p></div>',
 				esc_html( sprintf( /* translators: %d: kalem sayısı */
-					__( '%d kalem kaydedildi.', 'deniz-finans' ), $n ) ) );
+					__( '%d alt kategori kaydedildi.', 'deniz-finans' ), $n ) ) );
 		}
 
 		self::filtreler( $filtre, $kalemler );
@@ -68,12 +68,12 @@ final class DHF_Screen_Kalemler {
 		echo '</ul>';
 		printf( '<p class="description" style="clear:both">%s</p>',
 			esc_html( sprintf( /* translators: %d: kalem sayısı */
-				__( '%d kalem gösteriliyor.', 'deniz-finans' ), count( $gosterilen ) ) ) );
+				__( '%d alt kategori gösteriliyor.', 'deniz-finans' ), count( $gosterilen ) ) ) );
 	}
 
 	private static function tablo( array $kalemler, string $filtre ): void {
 		if ( ! $kalemler ) {
-			echo '<p>' . esc_html__( 'Bu filtrede kalem yok.', 'deniz-finans' ) . '</p>';
+			echo '<p>' . esc_html__( 'Bu filtrede alt kategori yok.', 'deniz-finans' ) . '</p>';
 			return;
 		}
 
@@ -84,7 +84,7 @@ final class DHF_Screen_Kalemler {
 
 		echo '<table class="widefat striped"><thead><tr>';
 		$hesaplar = DHF_Screen_Hesaplar::hepsi( true );
-		foreach ( [ 'Kalem', 'Tür / Kategori', 'Tekrar', 'Gün', 'Varsayılan tutar', 'Ödeme şekli', 'Hesap', 'Etki', 'Aktif' ] as $h ) {
+		foreach ( [ 'Alt kategori', 'Tür / Kategori', 'Tekrar', 'Gün', 'Varsayılan tutar', 'Ödeme şekli', 'Hesap', 'Etki', 'Aktif' ] as $h ) {
 			echo '<th>' . esc_html( $h ) . '</th>';
 		}
 		echo '</tr></thead><tbody>';
@@ -148,7 +148,7 @@ final class DHF_Screen_Kalemler {
 		}
 		echo '</tbody></table>';
 
-		submit_button( __( 'Kalemleri kaydet', 'deniz-finans' ), 'primary' );
+		submit_button( __( 'Kaydet', 'deniz-finans' ), 'primary' );
 		echo '</form>';
 	}
 
