@@ -325,6 +325,53 @@ final class DHF_Islem {
 	}
 
 	/**
+	 * Satırı siler (mükerrer ya da yanlış girilmiş satır için). Kesinleşmiş ayda ve
+	 * Deniz Hesap aynasında çalışmaz. Silme her zaman log'a yazılır; aktarımdan gelen
+	 * satırın aktarım kaydı "atlandı" olur, aynı CSV tekrar yüklenince geri gelmez.
+	 */
+	public static function satir_sil( int $id ): true|WP_Error {
+		global $wpdb;
+		$i = DHF_Schema::table( 'islem' );
+		$s = $wpdb->get_row( $wpdb->prepare(
+			"SELECT s.*, k.ad AS kalem_ad FROM {$i} s LEFT JOIN " . DHF_Schema::table( 'kalem' ) . ' k ON k.id = s.kalem_id WHERE s.id = %d', $id
+		) );
+		if ( ! $s ) {
+			return new WP_Error( 'yok', __( 'Satır bulunamadı.', 'deniz-finans' ) );
+		}
+		$donem = DHF_Donem::bul( (int) $s->donem_id );
+		if ( ! DHF_Donem::duzenlenebilir( $donem ) ) {
+			return new WP_Error( 'kilitli', __( 'Bu ay kesinleşti; satır silmek için ayı gerekçeyle yeniden aç.', 'deniz-finans' ) );
+		}
+		if ( DHF_Deniz_Hesap::KAYNAK === $s->kaynak ) {
+			return new WP_Error( 'ayna', __( 'Bu satır Deniz Hesap\'tan geliyor; orada düzelt.', 'deniz-finans' ) );
+		}
+
+		$ozet = implode( ' · ', array_filter( [
+			(string) ( $s->kalem_ad ?: $s->aciklama ),
+			mysql2date( 'd.m', (string) $s->tarih ),
+			number_format( (float) $s->tutar, 2, '.', '' ),
+			( $s->aciklama && $s->aciklama !== $s->kalem_ad ) ? (string) $s->aciklama : '',
+		] ) );
+		$gerekce = 'yeniden_acildi' === $donem->durum
+			? DHF_Donem::acilma_gerekcesi( (int) $donem->id )
+			: __( 'Hareketler ekranından silindi', 'deniz-finans' );
+
+		$wpdb->query( 'START TRANSACTION' );
+		$wpdb->delete( DHF_Schema::table( 'islem_etki' ), [ 'islem_id' => $id ], [ '%d' ] );
+		$wpdb->update( DHF_Schema::table( 'aktarim_satir' ),
+			[ 'onay_durumu' => 'atlandi', 'karar' => 'atla', 'gerekce' => 'satir_silindi', 'eslesen_islem_id' => null ],
+			[ 'eslesen_islem_id' => $id ] );
+		$silindi = $wpdb->delete( $i, [ 'id' => $id ], [ '%d' ] );
+		if ( ! $silindi ) {
+			$wpdb->query( 'ROLLBACK' );
+			return new WP_Error( 'db', __( 'Satır silinemedi.', 'deniz-finans' ) );
+		}
+		DHF_Donem::log( (int) $donem->id, $id, 'satir_silindi', $ozet, null, $gerekce );
+		$wpdb->query( 'COMMIT' );
+		return true;
+	}
+
+	/**
 	 * Bir kalemin açık aylardaki satırlarının etkilerini kalemin güncel profiliyle yeniden üretir.
 	 * @return int yeniden hesaplanan satır sayısı
 	 */

@@ -108,6 +108,7 @@ final class DHF_Screen_Hareketler {
 			'eklendi'    => __( 'Satır eklendi.', 'deniz-finans' ),
 			'eksik_eklendi' => sprintf( __( '%d satır bu aya eklendi; tutarlarını gir.', 'deniz-finans' ), $n ),
 			'durum'      => __( 'Ayın durumu değişti.', 'deniz-finans' ),
+			'silindi'    => __( 'Satır silindi; değişiklik kaydına yazıldı.', 'deniz-finans' ),
 		];
 		if ( 'hata' === $key ) {
 			$hata = get_transient( 'dhf_hareket_hata_' . get_current_user_id() );
@@ -220,7 +221,7 @@ final class DHF_Screen_Hareketler {
 		printf( '<input type="hidden" name="yil" value="%d"><input type="hidden" name="ay" value="%d">', $yil, $ay );
 
 		echo '<table class="widefat striped dhf-tablo"><thead><tr>';
-		foreach ( [ 'Tarih', 'Alt kategori', 'Kategori', 'Geçen ay', 'Tutar', 'Durum', 'Etki', 'Not' ] as $h ) {
+		foreach ( [ 'Tarih', 'Alt kategori', 'Kategori', 'Geçen ay', 'Tutar', 'Durum', 'Etki', 'Not', '' ] as $h ) {
 			echo '<th>' . esc_html( $h ) . '</th>';
 		}
 		echo '</tr></thead><tbody>';
@@ -274,6 +275,15 @@ final class DHF_Screen_Hareketler {
 
 			printf( '<td><input type="text" name="satir[%d][not]" value="%s" class="dhf-not"%s></td>',
 				(int) $s->id, esc_attr( (string) $s->not_metni ), $kilit_s );
+			if ( $acik && ! $ayna ) {
+				$sil_url = wp_nonce_url( add_query_arg( [ 'action' => 'dhf_satir_sil', 'id' => (int) $s->id, 'yil' => $yil, 'ay' => $ay ], admin_url( 'admin-post.php' ) ), 'dhf_satir_sil_' . (int) $s->id );
+				$soru    = sprintf( __( "Bu satır silinsin mi?\n\n%1\$s · %2\$s · %3\$s\n\nSilme değişiklik kaydına yazılır.", 'deniz-finans' ),
+					(string) ( $s->kalem_ad ?: $s->aciklama ), mysql2date( 'd.m', $s->tarih ), number_format_i18n( (float) $s->tutar, 2 ) );
+				printf( '<td><a href="%s" class="dhf-sil" onclick="return confirm(%s);" title="%s">%s</a></td>',
+					esc_url( $sil_url ), esc_attr( (string) wp_json_encode( $soru ) ), esc_attr__( 'Satırı sil', 'deniz-finans' ), esc_html__( 'Sil', 'deniz-finans' ) );
+			} else {
+				echo '<td></td>';
+			}
 			echo '</tr>';
 		}
 		echo '</tbody></table>';
@@ -374,7 +384,7 @@ final class DHF_Screen_Hareketler {
 		if ( ! $kayitlar ) {
 			return;
 		}
-		$alanlar = [ 'durum' => 'Ay durumu', 'tutar' => 'Tutar', 'not' => 'Not', 'satir_eklendi' => 'Satır eklendi', 'taslak_onay' => 'Taslaklar onaylandı' ];
+		$alanlar = [ 'durum' => 'Ay durumu', 'tutar' => 'Tutar', 'not' => 'Not', 'satir_eklendi' => 'Satır eklendi', 'satir_silindi' => 'Satır silindi', 'taslak_onay' => 'Taslaklar onaylandı' ];
 		echo '<details class="dhf-kayit"><summary>' . esc_html( sprintf( __( 'Değişiklik kaydı (%d)', 'deniz-finans' ), count( $kayitlar ) ) ) . '</summary>';
 		echo '<table class="widefat striped"><thead><tr><th>Zaman</th><th>Satır</th><th>Alan</th><th>Eski</th><th>Yeni</th><th>Gerekçe</th></tr></thead><tbody>';
 		foreach ( $kayitlar as $l ) {
@@ -442,6 +452,7 @@ final class DHF_Screen_Hareketler {
 		.dhf-yeni-kalem{background:#f6f7f7;padding:8px 10px}
 		.dhf-mukerrer-uyari{color:#b32d2e;font-weight:600}
 		.dhf-tablo tr.dhf-ayna{background:#f0f6fc}.dhf-etiket-hk{background:#dbeafe;color:#1e40af}
+		.dhf-sil{color:#b32d2e;text-decoration:none;font-size:12px}.dhf-sil:hover{color:#8a2424;text-decoration:underline}
 		.dhf-kayit{margin:16px 0;max-width:960px}.dhf-kayit summary{cursor:pointer;color:#2271b1}
 		@media (max-width:782px){.dhf-tablo th:nth-child(3),.dhf-tablo td:nth-child(3),.dhf-tablo th:nth-child(7),.dhf-tablo td:nth-child(7){display:none}.dhf-tutar{width:96px}}
 		</style>';
@@ -525,6 +536,19 @@ final class DHF_Screen_Hareketler {
 			self::hata( $yil, $ay, $sonuc->get_error_message() );
 		}
 		self::geri( $yil, $ay, 'durum', 0, 0 );
+	}
+
+	public static function handle_satir_sil(): void {
+		DHF_Caps::guard();
+		$id  = absint( $_GET['id'] ?? 0 );
+		$yil = absint( $_GET['yil'] ?? 0 );
+		$ay  = absint( $_GET['ay'] ?? 0 );
+		check_admin_referer( 'dhf_satir_sil_' . $id );
+		$sonuc = DHF_Islem::satir_sil( $id );
+		if ( is_wp_error( $sonuc ) ) {
+			self::hata( $yil, $ay, $sonuc->get_error_message() );
+		}
+		self::geri( $yil, $ay, 'silindi', 1, 0 );
 	}
 
 	public static function handle_satir_ekle(): void {
