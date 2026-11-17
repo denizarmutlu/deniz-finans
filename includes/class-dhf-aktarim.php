@@ -86,8 +86,9 @@ final class DHF_Aktarim {
 	}
 
 	/**
-	 * Eşleşme yoksa öneri: aynı tür (ve varsa aynı kategori) içindeki kalemlerin adı ve
-	 * bilinen varyantlarıyla metin benzerliği. Öneri yalnızca ön seçimdir; onaylanmadan yazılmaz.
+	 * Eşleşme yoksa öneri: aynı türdeki kalemlerin adı ve bilinen varyantlarıyla benzerlik
+	 * (DHF_Ayristirici::benzerlik); aynı kategorideki aday +10. Öneri yalnızca ön seçimdir,
+	 * ekranda "öneri — kontrol et" diye işaretlenir ve onaylanmadan yazılmaz.
 	 */
 	public static function oneri( string $metin, string $tur, ?int $kategori_id ): ?int {
 		global $wpdb;
@@ -100,26 +101,52 @@ final class DHF_Aktarim {
 			$tur
 		) );
 
-		$hedef = DHF_Ayristirici::normalize( $metin );
 		$en_iyi = null;
 		$skor   = 0.0;
 		foreach ( $adaylar as $a ) {
-			similar_text( $hedef, (string) $a->metin, $yuzde );
-			// İlk kelime (genellikle kurum veya kişi adı) tutuyorsa güçlü işaret.
-			$ilk_h = strtok( $hedef, ' ' );
-			$ilk_a = strtok( (string) $a->metin, ' ' );
-			if ( $ilk_h && $ilk_h === $ilk_a ) {
-				$yuzde += 15;
-			}
+			$puan = DHF_Ayristirici::benzerlik( $metin, (string) $a->metin );
 			if ( $kategori_id && (int) $a->kategori_id === $kategori_id ) {
-				$yuzde += 10;
+				$puan += 10;
 			}
-			if ( $yuzde > $skor ) {
-				$skor   = $yuzde;
+			if ( $puan > $skor ) {
+				$skor   = $puan;
 				$en_iyi = (int) $a->kalem_id;
 			}
 		}
-		return $skor >= 55 ? $en_iyi : null;
+		return $skor >= 60 ? $en_iyi : null;
+	}
+
+	/**
+	 * Eşleştirme anahtarlarını güncel normalize() kuralına taşır (0.3.1: Türkçe harfler katlandı).
+	 * Yeni anahtarda çakışan satır silinir; elle girilmiş eşleşme sözlükten gelene tercih edilir.
+	 */
+	public static function eslesme_normalize_et(): int {
+		global $wpdb;
+		if ( (int) get_option( 'dhf_eslesme_norm', 1 ) >= 2 ) {
+			return 0;
+		}
+		$t     = DHF_Schema::table( 'kalem_eslesme' );
+		$satir = $wpdb->get_results( "SELECT * FROM {$t} ORDER BY kaynak = 'elle' DESC, id" );
+		$alinan = [];
+		$n      = 0;
+		foreach ( $satir as $r ) {
+			$yeni = DHF_Ayristirici::normalize( (string) $r->metin );
+			$key  = $r->tur . '|' . $yeni;
+			if ( isset( $alinan[ $key ] ) ) {
+				$wpdb->delete( $t, [ 'id' => (int) $r->id ], [ '%d' ] );
+				++$n;
+				continue;
+			}
+			$alinan[ $key ] = true;
+			if ( $yeni !== $r->metin ) {
+				// Geçici çakışmayı önlemek için önce benzersiz bir ara değer.
+				$wpdb->update( $t, [ 'metin' => '~' . $r->id ], [ 'id' => (int) $r->id ] );
+				$wpdb->update( $t, [ 'metin' => $yeni ], [ 'id' => (int) $r->id ] );
+				++$n;
+			}
+		}
+		update_option( 'dhf_eslesme_norm', 2, false );
+		return $n;
 	}
 
 	/* ---------------------------------------------------------------- */

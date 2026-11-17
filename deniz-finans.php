@@ -3,7 +3,7 @@
  * Plugin Name:       Deniz Finans
  * Plugin URI:        https://github.com/denizarmutlu/deniz-finans
  * Description:       Kişisel gelir-gider, borç, yatırım ve bilanço takibi. Yalnızca yönetici erişimi; ön yüzde hiçbir çıktı üretmez.
- * Version:           0.3.0
+ * Version:           0.3.1
  * Requires at least: 6.0
  * Requires PHP:      8.0
  * Author:            Deniz Armutlu
@@ -17,8 +17,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'DHF_VERSION', '0.3.0' );
-define( 'DHF_DB_VERSION', 3 );
+define( 'DHF_VERSION', '0.3.1' );
+define( 'DHF_DB_VERSION', 4 );
 define( 'DHF_FILE', __FILE__ );
 define( 'DHF_DIR', plugin_dir_path( __FILE__ ) );
 define( 'DHF_URL', plugin_dir_url( __FILE__ ) );
@@ -46,6 +46,7 @@ register_activation_hook( __FILE__, static function (): void {
 	DHF_Seed::run_once();
 	DHF_Seed::kalemler_once();
 	DHF_Aktarim::eslesme_seed();
+	update_option( 'dhf_eslesme_norm', 2, false );
 } );
 
 register_deactivation_hook( __FILE__, static function (): void {
@@ -61,6 +62,7 @@ add_action( 'plugins_loaded', static function (): void {
 		DHF_Seed::kalemler_once();
 		// 0.3: kalem sözlüğündeki varyantlar eşleştirme tablosuna taşınır.
 		DHF_Aktarim::eslesme_seed();
+		DHF_Aktarim::eslesme_normalize_et();
 	}
 	new DHF_Admin();
 } );

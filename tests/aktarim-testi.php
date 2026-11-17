@@ -34,7 +34,16 @@ kontrol( '"abc" reddedilir', null === DHF_Ayristirici::tutar( 'abc' ) );
 
 /* Normalize — Türkçe büyük/küçük harf ve boşluk */
 kontrol( 'İ/I Türkçe küçülür', DHF_Ayristirici::normalize( 'İGDAŞ  Doğalgaz HB ' ) === DHF_Ayristirici::normalize( 'igdaş doğalgaz hb' ) );
-kontrol( 'Sondaki boşluk eşleşmeyi bozmaz', DHF_Ayristirici::normalize( 'İhtiyaç Kredisi ' ) === 'ihtiyaç kredisi' );
+kontrol( 'Sondaki boşluk eşleşmeyi bozmaz', DHF_Ayristirici::normalize( 'İhtiyaç Kredisi ' ) === DHF_Ayristirici::normalize( 'ihtiyaç kredisi' ) );
+kontrol( 'Karışık dil: "Internet" = "internet"', DHF_Ayristirici::normalize( 'Internet' ) === DHF_Ayristirici::normalize( 'internet' ) );
+kontrol( 'Karışık dil: "HDI FIBA" = "hdi fiba"', DHF_Ayristirici::normalize( 'HDI FIBA' ) === DHF_Ayristirici::normalize( 'hdi fiba' ) );
+
+/* Öneri benzerliği — banka adı ortak kelimelerden ağır basar */
+kontrol( 'Halkbank kart ödemesi, Akbank\'tan önce gelir',
+	DHF_Ayristirici::benzerlik( 'Halkbank Kredi Kartı Ödeme', 'halkbank kart ödemesi' )
+	> DHF_Ayristirici::benzerlik( 'Halkbank Kredi Kartı Ödeme', 'akbank kredi kartı ödeme' ) );
+kontrol( 'Kelime sırası farklı olsa da kişi adı eşleşir',
+	DHF_Ayristirici::benzerlik( 'Ahmet Usta a Motor Bakım için', 'motor bakımı (ahmet usta)' ) >= 60 );
 
 /* CSV — Sheets dışa aktarımı: virgül ayraç, virgüllü tutar tırnaklı */
 $csv = "\xEF\xBB\xBFTarih,Tür,Kategori,Açıklama,Tutar\n"

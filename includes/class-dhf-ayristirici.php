@@ -43,14 +43,49 @@ final class DHF_Ayristirici {
 	];
 
 	/**
-	 * Türkçe duyarlı küçük harf + boşluk sadeleştirme. Eşleştirme anahtarı budur.
-	 * "İgdaş doğalgaz  HB " ile "igdaş doğalgaz hb" aynı anahtarı verir.
+	 * Eşleştirme anahtarı: küçük harf, Türkçe harfler katlanmış, boşluk sadeleşmiş.
+	 * "İgdaş doğalgaz  HB ", "igdas dogalgaz hb" ve "IGDAŞ DOĞALGAZ HB" aynı anahtarı verir.
+	 * Defter Türkçe ve İngilizce karışık yazıldığı için ("Internet", "HDI") I/ı/İ/i tek harfe iner.
+	 * Yalnızca karşılaştırma içindir; ekranda ve defterde özgün metin durur.
 	 */
 	public static function normalize( string $s ): string {
-		$s = str_replace( [ 'İ', 'I' ], [ 'i', 'ı' ], $s );
-		$s = mb_strtolower( $s, 'UTF-8' );
+		$s = mb_strtolower( str_replace( [ 'İ', 'I' ], 'i', $s ), 'UTF-8' );
+		$s = strtr( $s, [ 'ı' => 'i', 'ş' => 's', 'ğ' => 'g', 'ü' => 'u', 'ö' => 'o', 'ç' => 'c', 'â' => 'a', 'î' => 'i', 'û' => 'u' ] );
 		$s = preg_replace( '/\s+/u', ' ', $s ) ?? $s;
 		return trim( $s );
+	}
+
+	/**
+	 * Öneri için kelime kökleri: harf/rakam dışı her şey ayraç, 3 harften kısa kelimeler atılır,
+	 * Türkçe ekleri tolere etmek için ilk 4 harf alınır ("kartı" ~ "kart", "bakımı" ~ "bakım").
+	 *
+	 * @return string[]
+	 */
+	public static function kokler( string $s ): array {
+		$out = [];
+		foreach ( preg_split( '/[^\p{L}\p{N}]+/u', self::normalize( $s ) ) ?: [] as $w ) {
+			if ( mb_strlen( $w ) >= 3 ) {
+				$out[ mb_substr( $w, 0, 4 ) ] = true;
+			}
+		}
+		return array_keys( $out );
+	}
+
+	/**
+	 * Serbest metin ile bir aday arasındaki benzerlik puanı. Ortak kök başına 25,
+	 * ilk kelime (genellikle kurum veya kişi) tutarsa 15, üstüne harf benzerliğinin yarısı.
+	 * "Halkbank Kredi Kartı Ödeme" -> "Halkbank kart ödemesi" (Akbank değil).
+	 */
+	public static function benzerlik( string $metin, string $aday ): float {
+		$a = self::kokler( $metin );
+		$b = self::kokler( $aday );
+		$ortak = count( array_intersect( $a, $b ) );
+		similar_text( self::normalize( $metin ), self::normalize( $aday ), $yuzde );
+		$puan = 25 * $ortak + $yuzde / 2;
+		if ( $a && $b && $a[0] === $b[0] ) {
+			$puan += 15;
+		}
+		return $puan;
 	}
 
 	/** "15.03.2026" | "30/05/2026" -> "2026-03-15". Geçersizse null — düzeltme yapılmaz. */
