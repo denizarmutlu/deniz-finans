@@ -9,7 +9,8 @@
  *   hazir      — kalemi bulundu, sorun yok
  *   eslesmedi  — açıklama hiçbir kaleme bağlanamadı; ekranda seçilecek (öneri varsa kalem_id'de)
  *   kuyruk     — inceleme kuyruğu: hatalı tarih/tutar, mükerrer, kategori yok, defterde zaten var
- *   zaten_var  — bu kaynak satır daha önceki bir aktarımda yazıldı
+ *   zaten_var  — bu kaynak satır daha önceki bir aktarımda yazıldı ya da gerekçesiyle atlandı;
+ *                aynı dosya tekrar yüklenince ne yazılır ne yeniden sorulur
  *   yazildi    — işlem defterine yazıldı (eslesen_islem_id dolu)
  *   atlandi    — gerekçesiyle dışarıda bırakıldı; satır silinmez, kaydı kalır
  */
@@ -281,7 +282,7 @@ final class DHF_Aktarim {
 		global $wpdb;
 		$t = DHF_Schema::table( 'aktarim_satir' );
 		return (bool) $wpdb->get_var( $wpdb->prepare(
-			"SELECT 1 FROM {$t} WHERE satir_anahtari = %s AND onay_durumu = 'yazildi' LIMIT 1", $anahtar
+			"SELECT 1 FROM {$t} WHERE satir_anahtari = %s AND onay_durumu IN ('yazildi', 'atlandi') LIMIT 1", $anahtar
 		) );
 	}
 
