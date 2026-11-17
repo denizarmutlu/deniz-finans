@@ -56,7 +56,8 @@ final class DHF_Ayristirici {
 	}
 
 	/**
-	 * Öneri için kelime kökleri: harf/rakam dışı her şey ayraç, 3 harften kısa kelimeler atılır,
+	 * Öneri için kelime kökleri: harf/rakam dışı her şey ayraç, tek harfli kelimeler atılır
+	 * ("İş", "HB" gibi iki harfli kurum kısaltmaları kalır),
 	 * Türkçe ekleri tolere etmek için ilk 4 harf alınır ("kartı" ~ "kart", "bakımı" ~ "bakım").
 	 *
 	 * @return string[]
@@ -64,7 +65,7 @@ final class DHF_Ayristirici {
 	public static function kokler( string $s ): array {
 		$out = [];
 		foreach ( preg_split( '/[^\p{L}\p{N}]+/u', self::normalize( $s ) ) ?: [] as $w ) {
-			if ( mb_strlen( $w ) >= 3 ) {
+			if ( mb_strlen( $w ) >= 2 ) {
 				$out[ mb_substr( $w, 0, 4 ) ] = true;
 			}
 		}

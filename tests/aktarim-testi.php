@@ -42,6 +42,9 @@ kontrol( 'Karışık dil: "HDI FIBA" = "hdi fiba"', DHF_Ayristirici::normalize( 
 kontrol( 'Halkbank kart ödemesi, Akbank\'tan önce gelir',
 	DHF_Ayristirici::benzerlik( 'Halkbank Kredi Kartı Ödeme', 'halkbank kart ödemesi' )
 	> DHF_Ayristirici::benzerlik( 'Halkbank Kredi Kartı Ödeme', 'akbank kredi kartı ödeme' ) );
+kontrol( 'İki harfli kurum adı ("İş") sayılır',
+	DHF_Ayristirici::benzerlik( 'İş Bankası Kredi Kartı ödeme', 'iş bankası kart ödemesi' )
+	> DHF_Ayristirici::benzerlik( 'İş Bankası Kredi Kartı ödeme', 'ziraat bankası kredi kartı ödeme' ) );
 kontrol( 'Kelime sırası farklı olsa da kişi adı eşleşir',
 	DHF_Ayristirici::benzerlik( 'Ahmet Usta a Motor Bakım için', 'motor bakımı (ahmet usta)' ) >= 60 );
 
