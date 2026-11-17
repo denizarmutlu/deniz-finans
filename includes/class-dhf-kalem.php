@@ -71,6 +71,49 @@ final class DHF_Kalem {
 	}
 
 	/**
+	 * Hareketler ekranından yeni kalem (§5.1 "+ Yeni kalem"). Etki profili verilmezse türden çıkar:
+	 * gelir → gelir, yatırım → yatirim, gider → tuketim. Kart ödemesi ya da kredi taksiti gibi
+	 * tüketim olmayan bir kalemse profili açıkça seçilmeli — yoksa tüketime yazılır.
+	 */
+	public static function ekle( string $ad, int $kategori_id, string $tekrar, string $profil = '' ): int|WP_Error {
+		global $wpdb;
+		$ad = trim( $ad );
+		if ( '' === $ad ) {
+			return new WP_Error( 'ad', 'Yeni kalemin adı boş.' );
+		}
+		$kat = $wpdb->get_row( $wpdb->prepare( 'SELECT id, tur FROM ' . DHF_Schema::table( 'kategori' ) . ' WHERE id = %d', $kategori_id ) );
+		if ( ! $kat ) {
+			return new WP_Error( 'kategori', 'Yeni kalem için kategori seçilmeli.' );
+		}
+		if ( ! isset( self::TEKRAR[ $tekrar ] ) ) {
+			$tekrar = 'tek_seferlik';
+		}
+		if ( ! DHF_Etki::var_mi( $profil ) ) {
+			$profil = [ 'gelir' => 'gelir', 'yatirim' => 'yatirim' ][ $kat->tur ] ?? 'tuketim';
+		}
+
+		$t   = DHF_Schema::table( 'kalem' );
+		$var = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$t} WHERE ad = %s AND tur = %s", $ad, $kat->tur ) );
+		if ( $var ) {
+			return (int) $var;
+		}
+		$wpdb->insert( $t, [
+			'ad'           => mb_substr( $ad, 0, 190 ),
+			'tur'          => $kat->tur,
+			'kategori_id'  => (int) $kat->id,
+			'tekrar_tipi'  => $tekrar,
+			'odeme_sekli'  => 'elle',
+			'etki_profili' => $profil,
+			'aktif'        => 1,
+		] );
+		$id = (int) $wpdb->insert_id;
+		if ( $id && class_exists( 'DHF_Aktarim' ) ) {
+			DHF_Aktarim::eslesme_ekle( $ad, (string) $kat->tur, $id );
+		}
+		return $id ?: new WP_Error( 'db', 'Kalem eklenemedi.' );
+	}
+
+	/**
 	 * Bir dönem için beklenen kalemleri döndürür.
 	 * Pasif kalemler, bitiş tarihi geçmiş kalemler ve tek seferlikler dışarıda kalır.
 	 *

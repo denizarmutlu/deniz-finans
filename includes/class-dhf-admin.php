@@ -25,6 +25,10 @@ final class DHF_Admin {
 		add_action( 'admin_post_dhf_taslak', [ DHF_Screen_Hareketler::class, 'handle_taslak' ] );
 		add_action( 'admin_post_dhf_satirlar', [ DHF_Screen_Hareketler::class, 'handle_satirlar' ] );
 		add_action( 'admin_post_dhf_kalemler', [ DHF_Screen_Kalemler::class, 'handle' ] );
+		add_action( 'admin_post_dhf_taslak_eksik', [ DHF_Screen_Hareketler::class, 'handle_taslak_eksik' ] );
+		add_action( 'admin_post_dhf_eksik_ekle', [ DHF_Screen_Hareketler::class, 'handle_eksik_ekle' ] );
+		add_action( 'admin_post_dhf_donem_durum', [ DHF_Screen_Hareketler::class, 'handle_donem_durum' ] );
+		add_action( 'admin_post_dhf_satir_ekle', [ DHF_Screen_Hareketler::class, 'handle_satir_ekle' ] );
 		add_action( 'admin_post_dhf_aktarim_yukle', [ DHF_Screen_Aktarim::class, 'handle_yukle' ] );
 		add_action( 'admin_post_dhf_aktarim_karar', [ DHF_Screen_Aktarim::class, 'handle_karar' ] );
 		add_action( 'admin_post_dhf_aktarim_sil', [ DHF_Screen_Aktarim::class, 'handle_sil' ] );

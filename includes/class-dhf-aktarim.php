@@ -496,6 +496,10 @@ final class DHF_Aktarim {
 				$ay    = (int) substr( (string) $r->tarih, 5, 2 );
 				$donem = DHF_Islem::donem( $yil, $ay );
 				$tutar = (float) $r->tutar;
+				if ( ! DHF_Donem::duzenlenebilir( $donem ) ) {
+					$wpdb->query( 'ROLLBACK' );
+					return new WP_Error( 'kesin', sprintf( '%s kesinleşmiş; aktarım için önce ayı gerekçeyle yeniden aç. Hiçbir satır yazılmadı.', DHF_Takvim::ay_adi( $yil, $ay ) ) );
+				}
 
 				$ok = $wpdb->insert( $islem_t, [
 					'donem_id'      => (int) $donem->id,

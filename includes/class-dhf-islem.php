@@ -40,63 +40,186 @@ final class DHF_Islem {
 	/**
 	 * Kalem sözlüğünden ayın taslağını üretir (§2.1).
 	 * Zaten satırı olan kalem atlanır — aynı ay iki kez oluşturulsa bile mükerrer olmaz.
+	 * Var olan bir ayda tekrar çağrılınca yalnızca eksik kalemleri ekler.
 	 *
 	 * @return array{eklendi:int,atlandi:int}
 	 */
 	public static function taslak_uret( int $yil, int $ay ): array {
-		global $wpdb;
-
 		$donem = self::donem( $yil, $ay );
-		if ( ! $donem ) {
+		if ( ! $donem || ! DHF_Donem::duzenlenebilir( $donem ) ) {
 			return [ 'eklendi' => 0, 'atlandi' => 0 ];
 		}
 
-		$islem_t = DHF_Schema::table( 'islem' );
-		$mevcut  = $wpdb->get_col( $wpdb->prepare(
-			"SELECT DISTINCT kalem_id FROM {$islem_t} WHERE donem_id = %d AND kalem_id IS NOT NULL",
-			$donem->id
-		) );
-		$mevcut = array_map( 'intval', $mevcut );
-
+		$mevcut  = self::kalemleri( (int) $donem->id );
 		$eklendi = $atlandi = 0;
-		$son_gun = (int) gmdate( 't', (int) mktime( 0, 0, 0, $ay, 1, $yil ) );
-
 		foreach ( DHF_Kalem::donem_icin( $yil, $ay ) as $k ) {
-			if ( in_array( (int) $k->id, $mevcut, true ) ) {
+			if ( isset( $mevcut[ (int) $k->id ] ) ) {
 				++$atlandi;
 				continue;
 			}
+			$eklendi += self::taslak_satir( $donem, $k ) ? 1 : 0;
+		}
+		return [ 'eklendi' => $eklendi, 'atlandi' => $atlandi ];
+	}
 
-			// Gün korunur; hedef ayda o gün yoksa ayın son gününe çekilir,
-			// ama orijinal gün saklanır (§2.1): 31 Ocak -> 28 Şubat -> 31 Mart.
-			$orijinal = (int) ( $k->varsayilan_gun ?: 1 );
-			$gun      = min( $orijinal, $son_gun );
+	/** Dönemde satırı olan kalem id'leri. @return array<int,true> */
+	private static function kalemleri( int $donem_id ): array {
+		global $wpdb;
+		$i   = DHF_Schema::table( 'islem' );
+		$ids = $wpdb->get_col( $wpdb->prepare(
+			"SELECT DISTINCT kalem_id FROM {$i} WHERE donem_id = %d AND kalem_id IS NOT NULL", $donem_id
+		) );
+		return array_fill_keys( array_map( 'intval', $ids ), true );
+	}
 
-			// Sabit kalemde tutar dolu, değişkende boş gelir — "tutar bekliyor" (§2.2).
-			$tutar = ( 'sabit' === $k->tekrar_tipi ) ? (float) $k->varsayilan_tutar : 0.0;
+	/**
+	 * Tek kalem için taslak satır. Sabit kalemde tutar dolu, değişkende boş gelir —
+	 * "tutar bekliyor" (§2.2). Gün kuralı DHF_Takvim::gun().
+	 */
+	private static function taslak_satir( object $donem, object $k ): int {
+		global $wpdb;
+		$orijinal = (int) ( $k->varsayilan_gun ?: 1 );
+		$tutar    = ( 'sabit' === $k->tekrar_tipi ) ? (float) $k->varsayilan_tutar : 0.0;
 
-			$wpdb->insert( $islem_t, [
-				'donem_id'     => $donem->id,
-				'tarih'        => sprintf( '%04d-%02d-%02d', $yil, $ay, $gun ),
-				'orijinal_gun' => $orijinal,
-				'kalem_id'     => $k->id,
-				'tur'          => $k->tur,
-				'kategori_id'  => $k->kategori_id,
-				'hesap_id'     => $k->hesap_id,
-				'aciklama'     => $k->ad,
-				'tutar'        => $tutar,
-				'durum'        => 'taslak',
-				'kaynak'       => 'kopya',
-			] );
+		$wpdb->insert( DHF_Schema::table( 'islem' ), [
+			'donem_id'     => $donem->id,
+			'tarih'        => DHF_Takvim::tarih( (int) $donem->yil, (int) $donem->ay, $orijinal ),
+			'orijinal_gun' => $orijinal,
+			'kalem_id'     => $k->id,
+			'tur'          => $k->tur,
+			'kategori_id'  => $k->kategori_id,
+			'hesap_id'     => $k->hesap_id,
+			'aciklama'     => $k->ad,
+			'tutar'        => $tutar,
+			'durum'        => 'taslak',
+			'kaynak'       => 'kopya',
+		] );
 
-			$id = (int) $wpdb->insert_id;
-			if ( $id && $tutar > 0 ) {
-				DHF_Etki::yaz( $id, (string) $k->etki_profili, $tutar );
+		$id = (int) $wpdb->insert_id;
+		if ( $id && $tutar > 0 ) {
+			DHF_Etki::yaz( $id, (string) $k->etki_profili, $tutar );
+		}
+		return $id;
+	}
+
+	/**
+	 * "Geçen ay vardı, bu ay yok" (§5.1, §3.8): geçen ay gerçekleşmiş, bu ay hiç satırı
+	 * olmayan tekrarlayan kalemler. Otomatik ödemelerin deftere girilmeden kalmasını yakalar.
+	 *
+	 * @return object[] kalem + gecen_tutar + gecen_tarih
+	 */
+	public static function eksikler( int $yil, int $ay ): array {
+		global $wpdb;
+		[ $oy, $oa ] = DHF_Takvim::onceki( $yil, $ay );
+		$onceki = self::donem( $oy, $oa, false );
+		if ( ! $onceki ) {
+			return [];
+		}
+		$bu      = self::donem( $yil, $ay, false );
+		$mevcut  = $bu ? self::kalemleri( (int) $bu->id ) : [];
+		$i       = DHF_Schema::table( 'islem' );
+		$k       = DHF_Schema::table( 'kalem' );
+
+		$rows = $wpdb->get_results( $wpdb->prepare(
+			"SELECT kl.*, SUM(s.tutar) AS gecen_tutar, MAX(s.tarih) AS gecen_tarih
+			 FROM {$i} s INNER JOIN {$k} kl ON kl.id = s.kalem_id
+			 WHERE s.donem_id = %d AND s.durum = 'gerceklesti' AND s.tutar > 0
+			   AND kl.aktif = 1 AND kl.tekrar_tipi <> 'tek_seferlik'
+			 GROUP BY kl.id ORDER BY kl.ad",
+			$onceki->id
+		) );
+		return array_values( array_filter( $rows, static fn( $r ): bool => ! isset( $mevcut[ (int) $r->id ] ) ) );
+	}
+
+	/** Seçilen kalemleri bu aya taslak olarak ekler. */
+	public static function eksik_ekle( int $yil, int $ay, array $kalem_idler ): int {
+		$donem = self::donem( $yil, $ay );
+		if ( ! $donem || ! DHF_Donem::duzenlenebilir( $donem ) ) {
+			return 0;
+		}
+		$mevcut = self::kalemleri( (int) $donem->id );
+		$n      = 0;
+		foreach ( array_unique( array_map( 'intval', $kalem_idler ) ) as $id ) {
+			$k = DHF_Kalem::bul( $id );
+			if ( $k && ! isset( $mevcut[ $id ] ) ) {
+				$n += self::taslak_satir( $donem, $k ) ? 1 : 0;
 			}
-			++$eklendi;
+		}
+		return $n;
+	}
+
+	/**
+	 * Elle satır ekler — deftere girilmemiş ödeme ya da tek seferlik harcama.
+	 *
+	 * Aynı ayda aynı kalem + aynı tutar varsa ENGELLEMEZ, sorar (§2.7): $onay false ise
+	 * 'mukerrer' hatası döner ve mevcut satırın tarihini/tutarını söyler.
+	 *
+	 * @param array{tarih:string,kalem_id:int,tutar:float,not?:string} $v
+	 */
+	public static function satir_ekle( array $v, bool $onay = false ): int|WP_Error {
+		global $wpdb;
+		$tarih = (string) $v['tarih'];
+		if ( ! preg_match( '/^(\d{4})-(\d{2})-(\d{2})$/', $tarih, $m ) || ! checkdate( (int) $m[2], (int) $m[3], (int) $m[1] ) ) {
+			return new WP_Error( 'tarih', 'Tarih geçersiz.' );
+		}
+		$k = DHF_Kalem::bul( (int) $v['kalem_id'] );
+		if ( ! $k ) {
+			return new WP_Error( 'kalem', 'Kalem seçilmedi.' );
+		}
+		$tutar = round( (float) $v['tutar'], 2 );
+		if ( $tutar <= 0 ) {
+			return new WP_Error( 'tutar', 'Tutar sıfırdan büyük olmalı.' );
 		}
 
-		return [ 'eklendi' => $eklendi, 'atlandi' => $atlandi ];
+		$donem = self::donem( (int) $m[1], (int) $m[2] );
+		if ( ! DHF_Donem::duzenlenebilir( $donem ) ) {
+			return new WP_Error( 'kesin', 'Bu ay kesinleşmiş. Satır eklemek için önce ayı gerekçeyle yeniden aç.' );
+		}
+
+		$i = DHF_Schema::table( 'islem' );
+		if ( ! $onay ) {
+			$var = $wpdb->get_row( $wpdb->prepare(
+				"SELECT tarih, tutar FROM {$i} WHERE donem_id = %d AND kalem_id = %d AND tutar = %f LIMIT 1",
+				$donem->id, $k->id, $tutar
+			) );
+			if ( $var ) {
+				return new WP_Error( 'mukerrer', sprintf(
+					'Bu kalem bu ay zaten var (%s, %s). Yine de eklemek istiyorsan kutuyu işaretleyip tekrar gönder.',
+					mysql2date( 'd.m', $var->tarih ), number_format_i18n( (float) $var->tutar, 2 )
+				) );
+			}
+		}
+
+		$kategori = $k->kategori_id ? (string) $wpdb->get_var( $wpdb->prepare(
+			'SELECT ad FROM ' . DHF_Schema::table( 'kategori' ) . ' WHERE id = %d', $k->kategori_id
+		) ) : '';
+
+		$ok = $wpdb->insert( $i, [
+			'donem_id'      => $donem->id,
+			'tarih'         => $tarih,
+			'orijinal_gun'  => (int) $m[3],
+			'kalem_id'      => $k->id,
+			'tur'           => $k->tur,
+			'kategori_id'   => $k->kategori_id,
+			'hesap_id'      => $k->hesap_id,
+			'aciklama'      => $k->ad,
+			'not_metni'     => '' === trim( (string) ( $v['not'] ?? '' ) ) ? null : trim( (string) $v['not'] ),
+			'tutar'         => $tutar,
+			'durum'         => $tarih > current_time( 'Y-m-d' ) ? 'planlanan' : 'gerceklesti',
+			'kaynak'        => 'manuel',
+			'tekil_anahtar' => DHF_Ayristirici::tekil_anahtar( $tarih, (string) $k->tur, $kategori, (string) $k->ad, $tutar ),
+		] );
+		$id = (int) $wpdb->insert_id;
+		if ( ! $ok || ! $id ) {
+			return new WP_Error( 'db', 'Satır yazılamadı.' );
+		}
+		DHF_Etki::yaz( $id, (string) $k->etki_profili, $tutar );
+
+		if ( 'yeniden_acildi' === $donem->durum ) {
+			DHF_Donem::log( (int) $donem->id, $id, 'satir_eklendi', null,
+				$k->ad . ' · ' . number_format( $tutar, 2, ',', '.' ), DHF_Donem::acilma_gerekcesi( (int) $donem->id ) );
+		}
+		return $id;
 	}
 
 	/* ---------------------------------------------------------------- */
@@ -125,7 +248,7 @@ final class DHF_Islem {
 	/** Geçen ayın aynı kalemdeki tutarı — karşılaştırma kolonu için. */
 	public static function gecen_ay( int $yil, int $ay ): array {
 		global $wpdb;
-		$onceki = ( 1 === $ay ) ? [ $yil - 1, 12 ] : [ $yil, $ay - 1 ];
+		$onceki = DHF_Takvim::onceki( $yil, $ay );
 		$d      = self::donem( $onceki[0], $onceki[1], false );
 		if ( ! $d ) {
 			return [];
@@ -143,7 +266,11 @@ final class DHF_Islem {
 		return $out;
 	}
 
-	/** Satır tutarını/durumunu günceller ve etkileri yeniden üretir. */
+	/**
+	 * Satır tutarını/durumunu günceller ve etkileri yeniden üretir.
+	 * Kesinleşmiş dönemde hiçbir şey yapmaz. Yeniden açılmış dönemde her değişen alan,
+	 * açılma gerekçesiyle birlikte log'a yazılır (§2.4). Değişmeyen satıra dokunulmaz.
+	 */
 	public static function satir_guncelle( int $id, float $tutar, string $durum, ?string $not ): bool {
 		global $wpdb;
 		$i = DHF_Schema::table( 'islem' );
@@ -155,9 +282,35 @@ final class DHF_Islem {
 		if ( ! isset( self::DURUMLAR[ $durum ] ) ) {
 			$durum = 'taslak';
 		}
+		$donem = DHF_Donem::bul( (int) $satir->donem_id );
+		if ( ! DHF_Donem::duzenlenebilir( $donem ) ) {
+			return false;
+		}
+		$not   = ( null === $not || '' === $not ) ? null : $not;
+		$tutar = round( $tutar, 2 );
+
+		$degisen = [];
+		if ( abs( (float) $satir->tutar - $tutar ) > 0.004 ) {
+			$degisen['tutar'] = [ (string) $satir->tutar, number_format( $tutar, 2, '.', '' ) ];
+		}
+		if ( $satir->durum !== $durum ) {
+			$degisen['durum'] = [ (string) $satir->durum, $durum ];
+		}
+		if ( (string) $satir->not_metni !== (string) $not ) {
+			$degisen['not'] = [ (string) $satir->not_metni, (string) $not ];
+		}
+		if ( ! $degisen ) {
+			return false;
+		}
+		if ( $donem && 'yeniden_acildi' === $donem->durum ) {
+			$gerekce = DHF_Donem::acilma_gerekcesi( (int) $donem->id );
+			foreach ( $degisen as $alan => [ $eski, $yeni ] ) {
+				DHF_Donem::log( (int) $donem->id, $id, $alan, $eski, $yeni, $gerekce );
+			}
+		}
 
 		$wpdb->update( $i,
-			[ 'tutar' => $tutar, 'durum' => $durum, 'not_metni' => ( '' === $not ? null : $not ) ],
+			[ 'tutar' => $tutar, 'durum' => $durum, 'not_metni' => $not ],
 			[ 'id' => $id ], [ '%f', '%s', '%s' ], [ '%d' ]
 		);
 
