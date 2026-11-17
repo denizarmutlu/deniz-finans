@@ -47,7 +47,7 @@ Bunun sonucu olarak raporlar üç ayrı soruyu cevaplar:
 
 ## Aktarım
 
-Google Sheets'teki sekme CSV olarak indirilir ve **Finans → Aktarım**'a yüklenir. Akış: önizleme → doğrulama → onay → yazma. Önizleme işlem defterine hiçbir şey yazmaz.
+Google Sheets'teki sekme CSV olarak indirilir ve **Deniz Finans → Aktarım**'a yüklenir. Akış: önizleme → doğrulama → onay → yazma. Önizleme işlem defterine hiçbir şey yazmaz.
 
 - Sütunlar konuma göre değil başlık adına göre bulunur.
 - Türk tarih ve tutar biçimi okunur (`15.03.2026`, `30/05/2026`, `1.785,0`). Okunamayan tarih **düzeltilmez**, satır inceleme kuyruğuna gider.
@@ -70,7 +70,7 @@ WordPress gerektirmez, örnek bir ay üzerinde çalışır. Kart ödemesinin ve 
 1. Depoyu indir ve klasörü `deniz-finans` adıyla zip'le.
 2. WordPress → Eklentiler → Yeni Ekle → Eklenti Yükle.
 3. Etkinleştir. Tablolar kurulur, yetki etkinleştiren yöneticiye verilir.
-4. Sol menüde **Finans** görünür. Önce **Finans → Ayarlar**'da tabloların kurulduğunu doğrula.
+4. Sol menüde **Deniz Finans** görünür. Önce **Deniz Finans → Ayarlar**'da tabloların kurulduğunu doğrula.
 
 ### Kendi verinle kurmak
 

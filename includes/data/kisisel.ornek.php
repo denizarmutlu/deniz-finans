@@ -5,7 +5,7 @@
  * Kendi tanımlarını ilk kurulumda yüklemek için bu dosyayı kisisel.php adıyla
  * kopyala ve düzenle. kisisel.php .gitignore'dadır; depoya girmez.
  * Dosya yoksa eklenti yalnızca genel kategorilerle kurulur; tanımlar sonra
- * Finans → Ayarlar'dan girilir.
+ * Deniz Finans → Ayarlar'dan girilir.
  */
 
 declare( strict_types = 1 );

@@ -33,8 +33,8 @@ final class DHF_Admin {
 
 	public function menu(): void {
 		add_menu_page(
-			__( 'Finans', 'deniz-finans' ),
-			__( 'Finans', 'deniz-finans' ),
+			__( 'Deniz Finans', 'deniz-finans' ),
+			__( 'Deniz Finans', 'deniz-finans' ),
 			DHF_CAP,
 			self::SLUG,
 			[ $this, 'page_panel' ],
@@ -145,7 +145,7 @@ final class DHF_Admin {
 		$eksik   = array_filter( $durum, static fn( array $t ): bool => ! $t['var'] );
 
 		echo '<div class="wrap">';
-		echo '<h1>' . esc_html__( 'Finans — Ayarlar', 'deniz-finans' ) . '</h1>';
+		echo '<h1>' . esc_html__( 'Deniz Finans — Ayarlar', 'deniz-finans' ) . '</h1>';
 
 		if ( isset( $_GET['dhf_mesaj'] ) ) {
 			$mesajlar = [
@@ -224,7 +224,7 @@ final class DHF_Admin {
 		echo '<h2>' . esc_html__( 'Erişim yetkisi', 'deniz-finans' ) . '</h2>';
 		echo '<p>' . esc_html( sprintf(
 			/* translators: %s: yetki adı */
-			__( 'Finans ekranları yalnızca %s yetkisi olan kullanıcılara görünür. Yetki role değil kullanıcıya verilir; editör veya yazar rolleri hiçbir ekranı görmez.', 'deniz-finans' ),
+			__( 'Deniz Finans ekranları yalnızca %s yetkisi olan kullanıcılara görünür. Yetki role değil kullanıcıya verilir; editör veya yazar rolleri hiçbir ekranı görmez.', 'deniz-finans' ),
 			DHF_CAP
 		) ) . '</p>';
 
