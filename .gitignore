@@ -1,0 +1,11 @@
+# Kişisel veri — asla depoya girmez
+includes/data/kisisel.php
+includes/data/kalemler.php
+*.csv
+*.xlsx
+*.sql
+
+# Sistem
+.DS_Store
+Thumbs.db
+*.zip
