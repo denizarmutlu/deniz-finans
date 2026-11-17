@@ -4,7 +4,7 @@ Kişisel gelir-gider, borç, yatırım ve bilanço takibi için WordPress eklent
 
 Google Sheets'te tutulan aylık nakit akışı tablosunun yerini almak için yazıldı. Temel fikir: **"gider" tek bir rakam değildir.** Kredi kartı ödemesi, kredi taksiti, faiz ve gerçek harcama ayrı sayaçlarda tutulur; böylece aynı para iki kez gider sayılmaz.
 
-## Durum — 0.3.1
+## Durum — 0.4.0
 
 | Bileşen | Sürüm | Durum |
 |---|---|---|
@@ -16,7 +16,8 @@ Google Sheets'te tutulan aylık nakit akışı tablosunun yerini almak için yaz
 | Tiplenmiş etkiler motoru | 0.2 | Çalışıyor + testli |
 | Aktarım: CSV önizleme, kalem eşleştirme, inceleme kuyruğu, onaylı yazma | 0.3 | Çalışıyor + testli |
 | Hesap tanımları (Ayarlar) ve kaleme hesap bağlama (Kalemler) | 0.3 | Çalışıyor |
-| Aylık kopyalama kuralları, dönem durumları | 0.4 | Planlandı |
+| Dönem durumları (açık → kontrol → kesinleşti → yeniden açıldı), değişiklik kaydı | 0.4 | Çalışıyor + testli |
+| "Geçen ay vardı, bu ay yok" uyarısı, elle satır ekleme, mükerrer sorusu | 0.4 | Çalışıyor |
 | Raporlar, WordPress Pano widget'ı | 0.5 | Planlandı |
 | Borçlar, yatırımlar, bilanço | 0.7–0.9 | Yer tutucu |
 
@@ -61,6 +62,7 @@ Google Sheets'teki sekme CSV olarak indirilir ve **Deniz Finans → Aktarım**'a
 ```
 php tests/etki-testi.php
 php tests/aktarim-testi.php
+php tests/donem-testi.php
 ```
 
 WordPress gerektirmez, örnek bir ay üzerinde çalışır. Kart ödemesinin ve kredi taksitinin tüketime yazılmadığını, mükerrer satırın yakalandığını ve aynı ay içindeki iki meşru taksitin (farklı tarihli) yanlışlıkla mükerrer sayılmadığını doğrular.
@@ -109,9 +111,12 @@ includes/class-dhf-islem.php         işlem defteri, taslak üretimi, toplamlar
 includes/data/*.ornek.php            kişisel veri şablonları
 includes/screens/                    Hareketler, Kalemler, Aktarım ekranları; Hesaplar bölümü
 includes/class-dhf-ayristirici.php   CSV, tarih, tutar, eşleştirme anahtarı — WordPress'siz
+includes/class-dhf-donem.php         dönem durumları ve değişiklik kaydı
+includes/class-dhf-takvim.php        ödeme günü kuralı, ay gezinme — WordPress'siz
 includes/class-dhf-aktarim.php       önizleme, kalem eşleştirme, inceleme kuyruğu, yazma
 tests/etki-testi.php                 kabul testi, WordPress gerektirmez
 tests/aktarim-testi.php              ayrıştırıcı kabul testi, WordPress gerektirmez
+tests/donem-testi.php                takvim (31 Ocak → 28 Şubat → 31 Mart) ve dönem geçişleri
 ```
 
 ## Gereksinimler
