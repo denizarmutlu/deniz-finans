@@ -4,17 +4,21 @@ Kişisel gelir-gider, borç, yatırım ve bilanço takibi için WordPress eklent
 
 Google Sheets'te tutulan aylık nakit akışı tablosunun yerini almak için yazıldı. Temel fikir: **"gider" tek bir rakam değildir.** Kredi kartı ödemesi, kredi taksiti, faiz ve gerçek harcama ayrı sayaçlarda tutulur; böylece aynı para iki kez gider sayılmaz.
 
-## Durum — 0.2.0
+## Durum — 0.3.1
 
 | Bileşen | Sürüm | Durum |
 |---|---|---|
-| Eklenti iskeleti, şema yönetimi, 21 tablo | 0.1 | Çalışıyor |
+| Eklenti iskeleti, şema yönetimi, 22 tablo | 0.1 | Çalışıyor |
 | `dhf_goruntule` yetkisi + yetki yönetimi | 0.1 | Çalışıyor |
 | Ayarlar ekranı: şema tanısı, yetki | 0.1 | Çalışıyor |
 | Kalem sözlüğü + Kalemler ekranı (liste, filtre, satır içi düzenleme) | 0.2 | Çalışıyor |
 | Aylık Hareketler ekranı (ay seç, taslak üret, düzenle, kaydet) | 0.2 | Çalışıyor |
 | Tiplenmiş etkiler motoru | 0.2 | Çalışıyor + testli |
-| Aktarım (Sheets/CSV), raporlar, borçlar, yatırımlar, bilanço | 0.3–0.9 | Yer tutucu |
+| Aktarım: CSV önizleme, kalem eşleştirme, inceleme kuyruğu, onaylı yazma | 0.3 | Çalışıyor + testli |
+| Hesap tanımları (Ayarlar) ve kaleme hesap bağlama (Kalemler) | 0.3 | Çalışıyor |
+| Aylık kopyalama kuralları, dönem durumları | 0.4 | Planlandı |
+| Raporlar, WordPress Pano widget'ı | 0.5 | Planlandı |
+| Borçlar, yatırımlar, bilanço | 0.7–0.9 | Yer tutucu |
 
 ## Tiplenmiş etkiler — projenin çekirdeği
 
@@ -41,10 +45,22 @@ Bunun sonucu olarak raporlar üç ayrı soruyu cevaplar:
 | Nakit | Bütün nakit çıkışları | "Hesabımdan ne çıktı?" |
 | Maliyet | Tüketim + faiz | "Bu ay bana neye mal oldu?" |
 
-## Kabul testi
+## Aktarım
+
+Google Sheets'teki sekme CSV olarak indirilir ve **Finans → Aktarım**'a yüklenir. Akış: önizleme → doğrulama → onay → yazma. Önizleme işlem defterine hiçbir şey yazmaz.
+
+- Sütunlar konuma göre değil başlık adına göre bulunur.
+- Türk tarih ve tutar biçimi okunur (`15.03.2026`, `30/05/2026`, `1.785,0`). Okunamayan tarih **düzeltilmez**, satır inceleme kuyruğuna gider.
+- Dosyada birebir aynı satır ikinci kez geçiyorsa kuyruğa girer; varsayılan karar "atla"dır. Atlanan satır silinmez, gerekçesiyle kaydı kalır.
+- Defterdeki serbest metin ("İgdaş doğalgaz hb") kalem sözlüğüne bir kez eşleştirilir ve hatırlanır. Eşleşmeyen satıra benzerliğe dayalı bir öneri gelir, onaylanmadan yazılmaz.
+- Aynı dosya tekrar yüklenirse daha önce yazılan ya da atlanan satırlar "daha önce aktarıldı" olarak gelir.
+- Yazma tek veritabanı işlemidir: bir satır yazılamazsa hiçbiri yazılmaz.
+
+## Kabul testleri
 
 ```
 php tests/etki-testi.php
+php tests/aktarim-testi.php
 ```
 
 WordPress gerektirmez, örnek bir ay üzerinde çalışır. Kart ödemesinin ve kredi taksitinin tüketime yazılmadığını, mükerrer satırın yakalandığını ve aynı ay içindeki iki meşru taksitin (farklı tarihli) yanlışlıkla mükerrer sayılmadığını doğrular.
@@ -83,7 +99,7 @@ Bu iki dosya `.gitignore`'dadır, depoya gönderilmez. Yoksa eklenti genel kateg
 
 ```
 deniz-finans.php                     bootstrap, sabitler, aktivasyon
-includes/class-dhf-schema.php        21 tablo, dbDelta, tanı
+includes/class-dhf-schema.php        22 tablo, dbDelta, tanı
 includes/class-dhf-caps.php          yetki: grant / revoke / guard
 includes/class-dhf-seed.php          ilk kurulum verisi (genel kategoriler)
 includes/class-dhf-admin.php         menü, yönlendirme, Ayarlar ekranı
@@ -91,8 +107,11 @@ includes/class-dhf-etki.php          tiplenmiş etkiler motoru
 includes/class-dhf-kalem.php         kalem sözlüğü + dönem için beklenen kalemler
 includes/class-dhf-islem.php         işlem defteri, taslak üretimi, toplamlar
 includes/data/*.ornek.php            kişisel veri şablonları
-includes/screens/                    Hareketler ve Kalemler ekranları
+includes/screens/                    Hareketler, Kalemler, Aktarım ekranları; Hesaplar bölümü
+includes/class-dhf-ayristirici.php   CSV, tarih, tutar, eşleştirme anahtarı — WordPress'siz
+includes/class-dhf-aktarim.php       önizleme, kalem eşleştirme, inceleme kuyruğu, yazma
 tests/etki-testi.php                 kabul testi, WordPress gerektirmez
+tests/aktarim-testi.php              ayrıştırıcı kabul testi, WordPress gerektirmez
 ```
 
 ## Gereksinimler
