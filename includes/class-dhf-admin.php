@@ -151,12 +151,15 @@ final class DHF_Admin {
 				'yetki_verildi'  => __( 'Yetki verildi.', 'deniz-finans' ),
 				'yetki_alindi'   => __( 'Yetki geri alındı.', 'deniz-finans' ),
 				'kullanici_yok'  => __( 'Kullanıcı bulunamadı.', 'deniz-finans' ),
+				'hesap_silindi'  => __( 'Hesap silindi.', 'deniz-finans' ),
+				'hesap_bagli'    => __( 'Hesap silinmedi: alt kategoriye, defter satırına ya da borca bağlı. Pasif yapabilirsin.', 'deniz-finans' ),
+				'hesap_yok'      => __( 'Hesap bulunamadı.', 'deniz-finans' ),
 			];
 			$key = sanitize_key( wp_unslash( $_GET['dhf_mesaj'] ) );
 			if ( isset( $mesajlar[ $key ] ) ) {
 				printf(
 					'<div class="notice notice-%s is-dismissible"><p>%s</p></div>',
-					'kullanici_yok' === $key ? 'error' : 'success',
+					in_array( $key, [ 'kullanici_yok', 'hesap_bagli', 'hesap_yok' ], true ) ? 'error' : 'success',
 					esc_html( $mesajlar[ $key ] )
 				);
 			}

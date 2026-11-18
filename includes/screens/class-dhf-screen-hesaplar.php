@@ -21,12 +21,30 @@ final class DHF_Screen_Hesaplar {
 		'nakit'       => 'Nakit',
 	];
 
+	/**
+	 * Hesaba bağlı kayıt sayısı: alt kategori + defter satırı + borç.
+	 * Bağlı hesap silinemez (o kayıtlar boşta kalır); yalnızca pasif yapılır.
+	 */
+	private static function baglanti_sql(): string {
+		return sprintf(
+			'((SELECT COUNT(*) FROM %1$s x WHERE x.hesap_id = h.id) + (SELECT COUNT(*) FROM %2$s x WHERE x.hesap_id = h.id) + (SELECT COUNT(*) FROM %3$s x WHERE x.hesap_id = h.id))',
+			DHF_Schema::table( 'kalem' ), DHF_Schema::table( 'islem' ), DHF_Schema::table( 'borc' )
+		);
+	}
+
+	/** Hesaba bağlı kayıt sayısı. */
+	public static function baglanti( int $id ): int {
+		global $wpdb;
+		$h = DHF_Schema::table( 'hesap' );
+		return (int) $wpdb->get_var( $wpdb->prepare( 'SELECT ' . self::baglanti_sql() . " FROM {$h} h WHERE h.id = %d", $id ) );
+	}
+
 	/** @return object[] */
 	public static function hepsi( bool $sadece_aktif = false ): array {
 		global $wpdb;
 		$h   = DHF_Schema::table( 'hesap' );
 		$k   = DHF_Schema::table( 'kurum' );
-		$sql = "SELECT h.*, k.ad AS kurum_ad FROM {$h} h LEFT JOIN {$k} k ON k.id = h.kurum_id";
+		$sql = 'SELECT h.*, ' . self::baglanti_sql() . " AS baglanti, k.ad AS kurum_ad FROM {$h} h LEFT JOIN {$k} k ON k.id = h.kurum_id";
 		if ( $sadece_aktif ) {
 			$sql .= ' WHERE h.aktif = 1';
 		}
@@ -47,20 +65,31 @@ final class DHF_Screen_Hesaplar {
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( 'dhf_hesap' );
 		echo '<input type="hidden" name="action" value="dhf_hesap">';
+		// Enter tuşu formun ilk düğmesini tetikler — o düğme "Sil" olmasın, "Kaydet" olsun.
+		echo '<button type="submit" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px"></button>';
 
 		echo '<table class="widefat striped" style="max-width:720px"><thead><tr>';
-		foreach ( [ 'Kurum', 'Hesap adı', 'Tip', 'Aktif' ] as $h ) {
+		foreach ( [ 'Kurum', 'Hesap adı', 'Tip', 'Aktif', '' ] as $h ) {
 			echo '<th>' . esc_html( $h ) . '</th>';
 		}
 		echo '</tr></thead><tbody>';
 		if ( ! $hesaplar ) {
-			echo '<tr><td colspan="4">' . esc_html__( 'Henüz hesap yok.', 'deniz-finans' ) . '</td></tr>';
+			echo '<tr><td colspan="5">' . esc_html__( 'Henüz hesap yok.', 'deniz-finans' ) . '</td></tr>';
 		}
 		foreach ( $hesaplar as $h ) {
-			printf( '<tr><td>%s</td><td>%s</td><td>%s</td><td><input type="checkbox" name="aktif[%d]" value="1"%s><input type="hidden" name="var[%d]" value="1"></td></tr>',
+			$bagli = (int) $h->baglanti;
+			$sil   = $bagli
+				? sprintf( '<span class="description" title="%s">%s</span>',
+					esc_attr__( 'Bağlı hesap silinemez; pasif yapabilirsin.', 'deniz-finans' ),
+					esc_html( sprintf( __( '%d kayda bağlı', 'deniz-finans' ), $bagli ) ) )
+				: sprintf( '<button type="submit" name="sil" value="%d" class="button-link" style="color:#b32d2e" onclick="return confirm(%s)">%s</button>',
+					(int) $h->id,
+					esc_attr( wp_json_encode( sprintf( __( '"%s" (%s) silinsin mi?', 'deniz-finans' ), $h->ad, self::TIPLER[ $h->tip ] ?? $h->tip ) ) ),
+					esc_html__( 'Sil', 'deniz-finans' ) );
+			printf( '<tr><td>%s</td><td>%s</td><td>%s</td><td><input type="checkbox" name="aktif[%d]" value="1"%s><input type="hidden" name="var[%d]" value="1"></td><td>%s</td></tr>',
 				esc_html( (string) $h->kurum_ad ), esc_html( (string) $h->ad ),
 				esc_html( self::TIPLER[ $h->tip ] ?? $h->tip ),
-				(int) $h->id, checked( (int) $h->aktif, 1, false ), (int) $h->id );
+				(int) $h->id, checked( (int) $h->aktif, 1, false ), (int) $h->id, $sil );
 		}
 
 		// Yeni hesap satırı
@@ -74,7 +103,7 @@ final class DHF_Screen_Hesaplar {
 		foreach ( self::TIPLER as $k => $e ) {
 			printf( '<option value="%s">%s</option>', esc_attr( $k ), esc_html( $e ) );
 		}
-		echo '</select></td><td></td></tr>';
+		echo '</select></td><td></td><td></td></tr>';
 		echo '</tbody></table>';
 		submit_button( __( 'Hesapları kaydet', 'deniz-finans' ), 'secondary' );
 		echo '</form>';
@@ -85,6 +114,22 @@ final class DHF_Screen_Hesaplar {
 		check_admin_referer( 'dhf_hesap' );
 		global $wpdb;
 		$t = DHF_Schema::table( 'hesap' );
+
+		// Sil düğmesi: yalnızca hiçbir kayda bağlı olmayan hesap silinir.
+		if ( isset( $_POST['sil'] ) ) {
+			$id    = absint( wp_unslash( $_POST['sil'] ) );
+			$mesaj = 'hesap_yok';
+			if ( $id && $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$t} WHERE id = %d", $id ) ) ) {
+				if ( self::baglanti( $id ) > 0 ) {
+					$mesaj = 'hesap_bagli';
+				} else {
+					$wpdb->delete( $t, [ 'id' => $id ], [ '%d' ] );
+					$mesaj = 'hesap_silindi';
+				}
+			}
+			wp_safe_redirect( add_query_arg( [ 'page' => 'dhf-ayarlar', 'dhf_mesaj' => $mesaj ], admin_url( 'admin.php' ) ) . '#hesaplar' );
+			exit;
+		}
 
 		$var   = isset( $_POST['var'] ) && is_array( $_POST['var'] ) ? array_map( 'absint', array_keys( wp_unslash( $_POST['var'] ) ) ) : [];
 		$aktif = isset( $_POST['aktif'] ) && is_array( $_POST['aktif'] ) ? array_map( 'absint', array_keys( wp_unslash( $_POST['aktif'] ) ) ) : [];
