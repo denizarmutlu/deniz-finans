@@ -4,7 +4,7 @@ Kişisel gelir-gider, borç, yatırım ve bilanço takibi için WordPress eklent
 
 Google Sheets'te tutulan aylık nakit akışı tablosunun yerini almak için yazıldı. Temel fikir: **"gider" tek bir rakam değildir.** Kredi kartı ödemesi, kredi taksiti, faiz ve gerçek harcama ayrı sayaçlarda tutulur; böylece aynı para iki kez gider sayılmaz.
 
-## Durum — 0.4.0
+## Durum — 0.5.0
 
 | Bileşen | Sürüm | Durum |
 |---|---|---|
@@ -18,7 +18,8 @@ Google Sheets'te tutulan aylık nakit akışı tablosunun yerini almak için yaz
 | Hesap tanımları (Ayarlar) ve kaleme hesap bağlama (Kalemler) | 0.3 | Çalışıyor |
 | Dönem durumları (açık → kontrol → kesinleşti → yeniden açıldı), değişiklik kaydı | 0.4 | Çalışıyor + testli |
 | "Geçen ay vardı, bu ay yok" uyarısı, elle satır ekleme, mükerrer sorusu | 0.4 | Çalışıyor |
-| Raporlar, WordPress Pano widget'ı | 0.5 | Planlandı |
+| Raporlar: üç görünümlü özet, kategori pivotu, nakit ihtiyacı, yıl karşılaştırma, CSV | 0.5 | Çalışıyor + testli |
+| Gösterge Paneli (Bölge 1-2) ve WordPress Pano kutusu — tutarlar varsayılan gizli | 0.5 | Çalışıyor |
 | Borçlar, yatırımlar, bilanço | 0.7–0.9 | Yer tutucu |
 
 ## Tiplenmiş etkiler — projenin çekirdeği
@@ -63,6 +64,7 @@ Google Sheets'teki sekme CSV olarak indirilir ve **Deniz Finans → Aktarım**'a
 php tests/etki-testi.php
 php tests/aktarim-testi.php
 php tests/donem-testi.php
+php tests/rapor-testi.php
 ```
 
 WordPress gerektirmez, örnek bir ay üzerinde çalışır. Kart ödemesinin ve kredi taksitinin tüketime yazılmadığını, mükerrer satırın yakalandığını ve aynı ay içindeki iki meşru taksitin (farklı tarihli) yanlışlıkla mükerrer sayılmadığını doğrular.

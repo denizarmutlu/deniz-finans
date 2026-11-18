@@ -2,11 +2,10 @@
 /**
  * Yönetim menüsü ve ekran iskeletleri.
  *
- * 0.1'de Ayarlar ekranı çalışır durumda (şema tanısı + yetki yönetimi).
- * Diğer ekranlar yer tutucu; her biri hangi sürümde geleceğini yazar.
+ * Borçlar, Yatırımlar ve Bilanço henüz yer tutucu; her biri hangi sürümde geleceğini yazar.
  *
- * Ön yüzde hiçbir çıktı yok: shortcode, widget, public query var veya
- * REST ucu kaydedilmiyor (plan §8).
+ * Ön yüzde hiçbir çıktı yok: shortcode, ön yüz widget'ı, public query var veya
+ * REST ucu kaydedilmiyor (plan §8). Pano kutusu yalnızca yönetim panelinde.
  */
 
 declare( strict_types = 1 );
@@ -34,6 +33,10 @@ final class DHF_Admin {
 		add_action( 'admin_post_dhf_aktarim_karar', [ DHF_Screen_Aktarim::class, 'handle_karar' ] );
 		add_action( 'admin_post_dhf_aktarim_sil', [ DHF_Screen_Aktarim::class, 'handle_sil' ] );
 		add_action( 'admin_post_dhf_hesap', [ DHF_Screen_Hesaplar::class, 'handle' ] );
+		add_action( 'admin_post_dhf_rapor_csv', [ DHF_Screen_Raporlar::class, 'handle_csv' ] );
+		add_action( 'admin_post_dhf_pano_goster', [ DHF_Pano::class, 'handle_goster' ] );
+		// WordPress Pano kutusu (§5.11) — yetkisi olmayana kaydedilmez.
+		add_action( 'wp_dashboard_setup', [ DHF_Pano::class, 'kaydet' ] );
 	}
 
 	public function menu(): void {
@@ -82,12 +85,7 @@ final class DHF_Admin {
 	}
 
 	public function page_panel(): void {
-		$this->stub( __( 'Gösterge Paneli', 'deniz-finans' ), '0.5–0.9', [
-			'Bölge 1 — Bu ay ne yapmam lazım: ay kapanış durumu, elle ödenecekler listesi',
-			'Bölge 2 — Nakit ihtiyacı; tüketim / faiz / borç azaltımı / yatırım ayrı kutularda',
-			'Bölge 3 — Toplam borç, aylık değişim, yıl başından beri faiz, sabit yük çizgisi',
-			'Bölge 4 — Portföy, reel getiri, net finansal durum ve net servet (nominal + reel)',
-		] );
+		DHF_Pano::panel();
 	}
 
 	public function page_hareketler(): void {
@@ -99,11 +97,7 @@ final class DHF_Admin {
 	}
 
 	public function page_raporlar(): void {
-		$this->stub( __( 'Raporlar', 'deniz-finans' ), '0.5', [
-			'Üç görünüm seçici: Tüketim / Nakit / Maliyet — başlıkta hangisi olduğu yazılı',
-			'Ay × Kategori pivotu, nakit ihtiyacı, yıl karşılaştırma',
-			'Sabit yük takvimi, planlanan/gerçekleşen, mutabakat raporu',
-		] );
+		DHF_Screen_Raporlar::render();
 	}
 
 	public function page_borclar(): void {
