@@ -4,7 +4,7 @@ Kişisel gelir-gider, borç, yatırım ve bilanço takibi için WordPress eklent
 
 Google Sheets'te tutulan aylık nakit akışı tablosunun yerini almak için yazıldı. Temel fikir: **"gider" tek bir rakam değildir.** Kredi kartı ödemesi, kredi taksiti, faiz ve gerçek harcama ayrı sayaçlarda tutulur; böylece aynı para iki kez gider sayılmaz.
 
-## Durum — 0.6.1
+## Durum — 0.6.2
 
 | Bileşen | Sürüm | Durum |
 |---|---|---|

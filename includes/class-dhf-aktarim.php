@@ -307,8 +307,15 @@ final class DHF_Aktarim {
 		}
 		if ( null === $cache ) {
 			$cache = [];
-			foreach ( $wpdb->get_results( 'SELECT id, ad, tip FROM ' . DHF_Schema::table( 'hesap' ) ) as $h ) {
-				$cache[ DHF_Ayristirici::normalize( (string) $h->ad ) ] = $h;
+			// Aynı adlı vadesiz/KMH ve kart hesabı olabilir ("YKB Maltepe"): yalnız ad
+			// yazılırsa kart profili kredi kartını alır; "ad tip" (ör. "YKB Maltepe kmh")
+			// her zaman tektir.
+			foreach ( $wpdb->get_results( 'SELECT id, ad, tip FROM ' . DHF_Schema::table( 'hesap' ) . ' ORDER BY id' ) as $h ) {
+				$ad_n = DHF_Ayristirici::normalize( (string) $h->ad );
+				$cache[ $ad_n . ' ' . DHF_Ayristirici::normalize( str_replace( '_', ' ', (string) $h->tip ) ) ] = $h;
+				if ( ! isset( $cache[ $ad_n ] ) || 'kredi_karti' === $h->tip ) {
+					$cache[ $ad_n ] = $h;
+				}
 			}
 		}
 		return $cache[ DHF_Ayristirici::normalize( $ad ) ] ?? null;
