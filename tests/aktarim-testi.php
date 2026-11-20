@@ -100,5 +100,13 @@ kontrol( 'Tekil anahtar tarihi içerir',
 	DHF_Ayristirici::tekil_anahtar( '2026-03-15', 'gider', 'Kredi', 'İhtiyaç kredisi', 4000 )
 	!== DHF_Ayristirici::tekil_anahtar( '2026-03-23', 'gider', 'Kredi', 'İhtiyaç kredisi', 4000 ) );
 
+// 0.6.1 — kart ekstresi profili
+$kh = DHF_Ayristirici::sutun_haritasi( 'kart', [ 'Tarih', 'Tür', 'Alt kategori', 'Açıklama', 'Tutar', 'Hesap', 'Not' ] );
+kontrol( 'Kart profili sütunları bulunur', is_array( $kh ) && 2 === $kh['alt_kategori'] && 5 === $kh['hesap'] && 6 === $kh['not'] );
+kontrol( 'Kart profilinde Hesap sütunu zorunlu', 'hesap' === DHF_Ayristirici::sutun_haritasi( 'kart', [ 'Tarih', 'Tür', 'Alt kategori', 'Açıklama', 'Tutar', 'Not' ] ) );
+$ks = DHF_Ayristirici::satir( [ '12.05.2026', 'Gider', 'Market', 'MIGROS ISTANBUL', '1.234,56', 'YKB kredi kartı', 'YKB ekstre 5' ], $kh );
+kontrol( 'Kart satırı okunur', '2026-05-12' === $ks['tarih'] && 'gider' === $ks['tur'] && 1234.56 === $ks['tutar'] && ! $ks['hatalar'] );
+kontrol( '2026 profili değişmedi', is_array( DHF_Ayristirici::sutun_haritasi( '2026', [ 'Tarih', 'Tür', 'Kategori', 'Açıklama', 'Tutar' ] ) ) );
+
 printf( "\n%d / %d test geçti\n", $gecti, $gecti + $kaldi );
 exit( $kaldi ? 1 : 0 );

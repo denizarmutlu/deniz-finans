@@ -31,6 +31,7 @@ final class DHF_Aktarim {
 		'negatif_tutar' => 'Tutar eksi',
 		'mukerrer'      => 'Dosyada birebir aynı satır var',
 		'kategori_yok'  => 'Kategori tanımlı değil',
+		'hesap_yok'     => 'Hesap tanımlı değil (Ayarlar → Hesaplar)',
 		'defterde_var'  => 'Defterde aynı tarih, kalem ve tutarla bir kayıt zaten var',
 		'deniz_hesap'   => 'Web işi Deniz Hesap\'tan okunuyor; Sheets satırı alınmaz',
 	];
@@ -217,9 +218,23 @@ final class DHF_Aktarim {
 				continue;
 			}
 
-			$kategori_id = $s['tur'] ? self::kategori_bul( $s['ham']['kategori'], $s['tur'] ) : null;
-			$kalem_id    = $s['tur'] ? self::eslesme_bul( $s['ham']['aciklama'], $s['tur'] ) : null;
-			$oneri       = ( ! $kalem_id && $s['tur'] ) ? self::oneri( $s['ham']['aciklama'], $s['tur'], $kategori_id ) : null;
+			if ( isset( $s['ham']['alt_kategori'] ) ) {
+				// Kart ekstresi: alt kategori dosyada adıyla gelir; kategori alt kategoriden.
+				$k           = $s['tur'] ? self::kalem_adla( $s['ham']['alt_kategori'], $s['tur'] ) : null;
+				$kalem_id    = $k ? (int) $k->id : null;
+				$kategori_id = $k ? ( (int) $k->kategori_id ?: null ) : null;
+				$oneri       = null;
+				if ( $k && ! $kategori_id ) {
+					$s['hatalar'][] = 'kategori_yok';
+				}
+				if ( '' !== trim( (string) $s['ham']['hesap'] ) && ! self::hesap_adla( (string) $s['ham']['hesap'] ) ) {
+					$s['hatalar'][] = 'hesap_yok';
+				}
+			} else {
+				$kategori_id = $s['tur'] ? self::kategori_bul( $s['ham']['kategori'], $s['tur'] ) : null;
+				$kalem_id    = $s['tur'] ? self::eslesme_bul( $s['ham']['aciklama'], $s['tur'] ) : null;
+				$oneri       = ( ! $kalem_id && $s['tur'] ) ? self::oneri( $s['ham']['aciklama'], $s['tur'], $kategori_id ) : null;
+			}
 
 			$hatalar = $s['hatalar'];
 			$gerekce = null;
@@ -227,13 +242,13 @@ final class DHF_Aktarim {
 				$hatalar[] = 'mukerrer';
 				$gerekce   = sprintf( 'Satır %d ile birebir aynı', $gorulen[ $icerik ][1] );
 			}
-			if ( $s['tur'] && ! $kategori_id ) {
+			if ( $s['tur'] && ! $kategori_id && ! isset( $s['ham']['alt_kategori'] ) ) {
 				$hatalar[] = 'kategori_yok';
 			}
 			if ( DHF_Deniz_Hesap::aynalanan_kalem( $kalem_id ?: $oneri ) ) {
 				$hatalar[] = 'deniz_hesap';
 			}
-			if ( ! $hatalar && $s['tarih'] && null !== $s['tutar'] && self::defterde_var( $s['tarih'], $s['tur'], $s['ham']['kategori'], $s['ham']['aciklama'], $s['tutar'] ) ) {
+			if ( ! $hatalar && $s['tarih'] && null !== $s['tutar'] && isset( $s['ham']['kategori'] ) && self::defterde_var( $s['tarih'], $s['tur'], $s['ham']['kategori'], $s['ham']['aciklama'], $s['tutar'] ) ) {
 				$hatalar[] = 'defterde_var';
 			}
 
@@ -268,6 +283,35 @@ final class DHF_Aktarim {
 		}
 
 		return $aktarim_id;
+	}
+
+	/** Alt kategoriyi adıyla bulur (kart profili). Türkçe harf katlamalı. */
+	public static function kalem_adla( string $ad, string $tur ): ?object {
+		static $cache = null;
+		global $wpdb;
+		if ( null === $cache ) {
+			$cache = [];
+			foreach ( $wpdb->get_results( 'SELECT id, ad, tur, kategori_id FROM ' . DHF_Schema::table( 'kalem' ) ) as $k ) {
+				$cache[ $k->tur . '|' . DHF_Ayristirici::normalize( (string) $k->ad ) ] = $k;
+			}
+		}
+		return $cache[ $tur . '|' . DHF_Ayristirici::normalize( $ad ) ] ?? null;
+	}
+
+	/** Hesabı adıyla bulur (kart profili). */
+	public static function hesap_adla( string $ad ): ?object {
+		static $cache = null;
+		global $wpdb;
+		if ( '' === trim( $ad ) ) {
+			return null;
+		}
+		if ( null === $cache ) {
+			$cache = [];
+			foreach ( $wpdb->get_results( 'SELECT id, ad, tip FROM ' . DHF_Schema::table( 'hesap' ) ) as $h ) {
+				$cache[ DHF_Ayristirici::normalize( (string) $h->ad ) ] = $h;
+			}
+		}
+		return $cache[ DHF_Ayristirici::normalize( $ad ) ] ?? null;
 	}
 
 	private static function kategori_bul( string $ad, string $tur ): ?int {
@@ -377,7 +421,9 @@ final class DHF_Aktarim {
 
 			$yaz = self::yazilacak_mi( $r ) || 'yazildi' === $r->onay_durumu;
 			if ( $yaz ) {
-				foreach ( DHF_Etki::uret( (string) $r->etki_profili, (float) $r->tutar ) as $e ) {
+				$ham_o = json_decode( (string) $r->ham_veri, true ) ?: [];
+				$karta = 'kredi_karti' === ( self::hesap_adla( (string) ( $ham_o['hesap'] ?? '' ) )->tip ?? '' );
+				foreach ( DHF_Etki::uret( (string) $r->etki_profili, (float) $r->tutar, $karta ) as $e ) {
 					$etki[ $e['etki_tipi'] ] += $e['tutar'];
 				}
 			} elseif ( null !== $r->tutar && 'zaten_var' !== $r->onay_durumu ) {
@@ -512,8 +558,9 @@ final class DHF_Aktarim {
 					'kalem_id'      => (int) $r->kalem_id,
 					'tur'           => $r->tur,
 					'kategori_id'   => $r->kategori_id ?: ( $kalem->kategori_id ?? null ),
-					'hesap_id'      => $kalem->hesap_id ?? null,
+					'hesap_id'      => self::hesap_adla( (string) ( $ham['hesap'] ?? '' ) )->id ?? ( $kalem->hesap_id ?? null ),
 					'aciklama'      => mb_substr( trim( (string) ( $ham['aciklama'] ?? '' ) ), 0, 190 ),
+					'not_metni'     => '' === trim( (string) ( $ham['not'] ?? '' ) ) ? null : mb_substr( trim( (string) $ham['not'] ), 0, 255 ),
 					'tutar'         => $tutar,
 					'durum'         => $r->tarih > $bugun ? 'planlanan' : 'gerceklesti',
 					'kaynak'        => 'import',

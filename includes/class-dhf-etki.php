@@ -8,6 +8,12 @@
  *
  * Profil kalemde bir kez tanımlanır; işlem her kaydedildiğinde etkiler
  * buradan yeniden üretilir, elle girilmez.
+ *
+ * 0.6.1 — Karttan ödenen satır: satırın hesabı kredi kartıysa para o ay
+ * hesaptan çıkmaz, kart borcu artar. Profilin "nakit çıkışı" etkisi
+ * "borç artışı" olur; tüketim, yatırım ve faiz etkileri aynen kalır.
+ * Para, kart ödemesi (kart_odeme) yapıldığında çıkar — böylece aynı
+ * harcamanın nakdi iki kez sayılmaz.
  */
 
 declare( strict_types = 1 );
@@ -93,25 +99,41 @@ final class DHF_Etki {
 	 *
 	 * @return array<int,array{etki_tipi:string,tutar:float}>
 	 */
-	public static function uret( string $profil, float $tutar ): array {
+	public static function uret( string $profil, float $tutar, bool $karta = false ): array {
 		if ( ! isset( self::PROFILLER[ $profil ] ) ) {
 			return [];
 		}
 		$out = [];
 		foreach ( self::PROFILLER[ $profil ]['etkiler'] as [ $tip, $oran ] ) {
+			if ( $karta && 'nakit_cikisi' === $tip ) {
+				$tip = 'borc_artisi';
+			}
 			$out[] = [ 'etki_tipi' => $tip, 'tutar' => round( $tutar * $oran, 2 ) ];
 		}
 		return $out;
 	}
 
-	/** Bir işlemin etkilerini siler ve profilden yeniden yazar. */
-	public static function yaz( int $islem_id, string $profil, float $tutar ): void {
+	/** Satırın hesabı kredi kartı mı? (0.6.1) */
+	public static function karta_mi( int $islem_id ): bool {
+		global $wpdb;
+		return 'kredi_karti' === (string) $wpdb->get_var( $wpdb->prepare(
+			'SELECT h.tip FROM ' . DHF_Schema::table( 'islem' ) . ' i JOIN ' . DHF_Schema::table( 'hesap' ) . ' h ON h.id = i.hesap_id WHERE i.id = %d',
+			$islem_id
+		) );
+	}
+
+	/**
+	 * Bir işlemin etkilerini siler ve profilden yeniden yazar.
+	 * $karta verilmezse satırın hesabından okunur.
+	 */
+	public static function yaz( int $islem_id, string $profil, float $tutar, ?bool $karta = null ): void {
 		global $wpdb;
 		$tablo = DHF_Schema::table( 'islem_etki' );
+		$karta = $karta ?? self::karta_mi( $islem_id );
 
 		$wpdb->delete( $tablo, [ 'islem_id' => $islem_id ], [ '%d' ] );
 
-		foreach ( self::uret( $profil, $tutar ) as $e ) {
+		foreach ( self::uret( $profil, $tutar, $karta ) as $e ) {
 			$wpdb->insert( $tablo, [
 				'islem_id'  => $islem_id,
 				'etki_tipi' => $e['etki_tipi'],
@@ -121,13 +143,13 @@ final class DHF_Etki {
 	}
 
 	/** Kısa gösterim: "nakit çıkışı + borç azaltımı" */
-	public static function ozet( string $profil ): string {
+	public static function ozet( string $profil, bool $karta = false ): string {
 		if ( ! isset( self::PROFILLER[ $profil ] ) ) {
 			return '—';
 		}
 		$parcalar = array_map(
-			static fn( array $e ): string => str_replace( '_', ' ', $e[0] ),
-			self::PROFILLER[ $profil ]['etkiler']
+			static fn( array $e ): string => str_replace( '_', ' ', $e['etki_tipi'] ),
+			self::uret( $profil, 1.0, $karta )
 		);
 		return implode( ' + ', $parcalar );
 	}

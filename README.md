@@ -4,7 +4,7 @@ Kişisel gelir-gider, borç, yatırım ve bilanço takibi için WordPress eklent
 
 Google Sheets'te tutulan aylık nakit akışı tablosunun yerini almak için yazıldı. Temel fikir: **"gider" tek bir rakam değildir.** Kredi kartı ödemesi, kredi taksiti, faiz ve gerçek harcama ayrı sayaçlarda tutulur; böylece aynı para iki kez gider sayılmaz.
 
-## Durum — 0.5.0
+## Durum — 0.6.1
 
 | Bileşen | Sürüm | Durum |
 |---|---|---|
@@ -20,6 +20,8 @@ Google Sheets'te tutulan aylık nakit akışı tablosunun yerini almak için yaz
 | "Geçen ay vardı, bu ay yok" uyarısı, elle satır ekleme, mükerrer sorusu | 0.4 | Çalışıyor |
 | Raporlar: üç görünümlü özet, kategori pivotu, nakit ihtiyacı, yıl karşılaştırma, CSV | 0.5 | Çalışıyor + testli |
 | Gösterge Paneli (Bölge 1-2) ve WordPress Pano kutusu — tutarlar varsayılan gizli | 0.5 | Çalışıyor |
+| Karttan ödenen satır: hesap kredi kartıysa nakit çıkışı yerine kart borcu artışı | 0.6.1 | Çalışıyor + testli |
+| Aktarım: kart ekstresi profili (alt kategori ve hesap dosyada adıyla) | 0.6.1 | Çalışıyor + testli |
 | Borçlar, yatırımlar, bilanço | 0.7–0.9 | Yer tutucu |
 
 ## Tiplenmiş etkiler — projenin çekirdeği
@@ -39,6 +41,8 @@ Bir işlemin tutarı, kalemin etki profiline göre birden fazla sayaca dağılı
 
 Profil kalemde bir kez tanımlanır; işlem her kaydedildiğinde etkiler yeniden üretilir, elle girilmez.
 
+**Karttan ödenen satır (0.6.1).** Satırın hesabı kredi kartıysa para o ay hesaptan çıkmaz: profilin *nakit çıkışı* etkisi *borç artışı* olur, tüketim / yatırım / faiz etkileri aynen kalır. Para, kartın borcu ödendiğinde (`kart_odeme`) çıkar. Böylece kartla ödenen bir BES katkısı ya da sigorta taksiti hem kendi satırında hem kart ödemesinde iki kez nakit çıkışı sayılmaz.
+
 Bunun sonucu olarak raporlar üç ayrı soruyu cevaplar:
 
 | Görünüm | Neyi toplar | Soru |
@@ -57,6 +61,7 @@ Google Sheets'teki sekme CSV olarak indirilir ve **Deniz Finans → Aktarım**'a
 - Defterdeki serbest metin ("İgdaş doğalgaz hb") kalem sözlüğüne bir kez eşleştirilir ve hatırlanır. Eşleşmeyen satıra benzerliğe dayalı bir öneri gelir, onaylanmadan yazılmaz.
 - Aynı dosya tekrar yüklenirse daha önce yazılan ya da atlanan satırlar "daha önce aktarıldı" olarak gelir.
 - Yazma tek veritabanı işlemidir: bir satır yazılamazsa hiçbiri yazılmaz.
+- **Kart ekstresi profili** (`Tarih · Tür · Alt kategori · Açıklama · Tutar · Hesap · Not`): alt kategori ve hesap dosyada adıyla yazılır, işyeri adları eşleştirme sözlüğüne girmez. Hesabı Ayarlar'da tanımlı değilse satır kuyruğa düşer.
 
 ## Kabul testleri
 

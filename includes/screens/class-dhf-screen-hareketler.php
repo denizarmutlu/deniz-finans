@@ -269,9 +269,11 @@ final class DHF_Screen_Hareketler {
 			}
 			echo '</select></td>';
 
-			printf( '<td class="dhf-soluk" title="%s">%s</td>',
-				esc_attr( DHF_Etki::aciklama( (string) $s->etki_profili ) ),
-				esc_html( DHF_Etki::ozet( (string) $s->etki_profili ) ) );
+			$karta = 'kredi_karti' === ( $s->hesap_tip ?? '' );
+			printf( '<td class="dhf-soluk" title="%s">%s%s</td>',
+				esc_attr( DHF_Etki::aciklama( (string) $s->etki_profili ) . ( $karta ? ' ' . sprintf( __( 'Karttan ödendi (%s): nakit çıkışı yerine kart borcu artar.', 'deniz-finans' ), (string) $s->hesap_ad ) : '' ) ),
+				esc_html( DHF_Etki::ozet( (string) $s->etki_profili, $karta ) ),
+				$karta ? ' <span class="dhf-etiket">' . esc_html( (string) $s->hesap_ad ) . '</span>' : '' );
 
 			printf( '<td><input type="text" name="satir[%d][not]" value="%s" class="dhf-not"%s></td>',
 				(int) $s->id, esc_attr( (string) $s->not_metni ), $kilit_s );

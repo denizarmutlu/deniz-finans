@@ -33,6 +33,21 @@ final class DHF_Ayristirici {
 				'tutar'    => [ 'tutar' ],
 			],
 		],
+		// 0.6.1 — Kart ekstresi. Alt kategori dosyada adıyla gelir (işyeri adları
+		// eşleştirme sözlüğüne girmez); hesap kredi kartıysa satır nakit değil
+		// kart borcu üretir.
+		'kart' => [
+			'etiket'   => 'Kart ekstresi (Tarih · Tür · Alt kategori · Açıklama · Tutar · Hesap · Not)',
+			'sutunlar' => [
+				'tarih'        => [ 'tarih' ],
+				'tur'          => [ 'tür', 'tur' ],
+				'alt_kategori' => [ 'alt kategori', 'alt_kategori', 'kalem' ],
+				'aciklama'     => [ 'açıklama', 'aciklama' ],
+				'tutar'        => [ 'tutar' ],
+				'hesap'        => [ 'hesap', 'kart' ],
+				'not'          => [ 'not' ],
+			],
+		],
 	];
 
 	public const TURLER = [

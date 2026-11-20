@@ -235,10 +235,11 @@ final class DHF_Islem {
 
 		return $wpdb->get_results( $wpdb->prepare(
 			"SELECT s.*, kl.ad AS kalem_ad, kl.tekrar_tipi, kl.etki_profili, kl.odeme_sekli,
-					kl.varsayilan_tutar, kt.ad AS kategori_ad
+					kl.varsayilan_tutar, kt.ad AS kategori_ad, hs.ad AS hesap_ad, hs.tip AS hesap_tip
 			 FROM {$i} s
 			 LEFT JOIN {$k} kl ON kl.id = s.kalem_id
 			 LEFT JOIN {$c} kt ON kt.id = s.kategori_id
+			 LEFT JOIN " . DHF_Schema::table( 'hesap' ) . " hs ON hs.id = s.hesap_id
 			 WHERE s.donem_id = %d
 			 ORDER BY (s.tutar = 0 AND kl.tekrar_tipi = 'degisken') DESC, s.tur, kt.sira, s.tarih",
 			$donem_id

@@ -101,7 +101,7 @@ final class DHF_Screen_Aktarim {
 		foreach ( DHF_Ayristirici::PROFILLER as $k => $p ) {
 			printf( '<option value="%s">%s</option>', esc_attr( $k ), esc_html( $p['etiket'] ) );
 		}
-		echo '</select><p class="description">' . esc_html__( '2025 profili 0.6\'da eklenecek.', 'deniz-finans' ) . '</p></td></tr>';
+		echo '</select><p class="description">' . esc_html__( 'Kart ekstresi profilinde alt kategori ve hesap adları dosyada yazılıdır; hesap kredi kartıysa satır nakit değil kart borcu üretir.', 'deniz-finans' ) . '</p></td></tr>';
 
 		echo '<tr><th>' . esc_html__( 'Yalnızca bu ay', 'deniz-finans' ) . '</th><td>';
 		echo '<select name="yil"><option value="">' . esc_html__( 'Tüm dosya', 'deniz-finans' ) . '</option>';

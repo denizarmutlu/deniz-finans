@@ -117,6 +117,36 @@ kontrol( '1.000 TL kart odemesi -> borc azaltimi', $kart['borc_azaltimi'], 1000.
 $kredi = topla( [ [ '2026-03-06', 'Kredi', 'Konut kredisi', 10000.0 ] ] );
 kontrol( '10.000 TL kredi taksiti -> tuketim', $kredi['tuketim_gideri'], 0.0 );
 
+
+// 0.6.1 — karttan ödenen satır: nakit çıkışı yerine borç artışı.
+echo "\n" . $cizgi . "KARTTAN ODENEN SATIR (0.6.1)\n" . $cizgi;
+$topla_k = static function ( string $profil, float $tutar, bool $karta ): array {
+	$t = array_fill_keys( DHF_Etki::TIPLER, 0.0 );
+	foreach ( DHF_Etki::uret( $profil, $tutar, $karta ) as $e ) {
+		$t[ $e['etki_tipi'] ] += $e['tutar'];
+	}
+	return $t;
+};
+$m = $topla_k( 'tuketim', 500.0, true );
+kontrol( 'Kartla market -> tuketim', $m['tuketim_gideri'], 500.0 );
+kontrol( 'Kartla market -> nakit cikisi YOK', $m['nakit_cikisi'], 0.0 );
+kontrol( 'Kartla market -> kart borcu artisi', $m['borc_artisi'], 500.0 );
+$b = $topla_k( 'yatirim', 2710.0, true );
+kontrol( 'Kartla BES -> yatirim', $b['yatirim_alimi'], 2710.0 );
+kontrol( 'Kartla BES -> nakit cikisi YOK', $b['nakit_cikisi'], 0.0 );
+kontrol( 'Kartla BES -> kart borcu artisi', $b['borc_artisi'], 2710.0 );
+$f = $topla_k( 'kart_faiz', 4386.0, true );
+kontrol( 'Kart faizi karta -> faiz', $f['faiz_masraf'], 4386.0 );
+kontrol( 'Kart faizi karta -> nakit cikisi YOK', $f['nakit_cikisi'], 0.0 );
+$n = $topla_k( 'tuketim', 500.0, false );
+kontrol( 'Nakit market -> nakit cikisi (degismedi)', $n['nakit_cikisi'], 500.0 );
+// Uçtan uca: ay içinde kartla 3.000 harcama + kart ödemesi 3.000 -> nakit tek kez çıkar.
+$ay_k = $topla_k( 'tuketim', 3000.0, true );
+$od   = $topla_k( 'kart_odeme', 3000.0, false );
+kontrol( 'Harcama + odeme -> nakit tek kez', $ay_k['nakit_cikisi'] + $od['nakit_cikisi'], 3000.0 );
+kontrol( 'Harcama + odeme -> net kart borcu', $ay_k['borc_artisi'] - $od['borc_azaltimi'], 0.0 );
+kontrol( 'Ozet metni karta', (float) ( 'tuketim gideri + borc artisi' === DHF_Etki::ozet( 'tuketim', true ) ), 1.0 );
+
 echo "\n" . $cizgi;
 printf( "SONUC: %d gecti, %d kaldi\n", $gecen, $kalan );
 echo $cizgi;
