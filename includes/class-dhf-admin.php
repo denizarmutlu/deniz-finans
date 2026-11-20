@@ -55,6 +55,7 @@ final class DHF_Admin {
 			'dhf-hareketler' => [ __( 'Aylık Hareketler', 'deniz-finans' ), 'page_hareketler' ],
 			'dhf-kalemler'   => [ __( 'Alt kategoriler', 'deniz-finans' ), 'page_kalemler' ],
 			'dhf-raporlar'   => [ __( 'Raporlar', 'deniz-finans' ), 'page_raporlar' ],
+			'dhf-kartlar'    => [ __( 'Kartlar', 'deniz-finans' ), 'page_kartlar' ],
 			'dhf-borclar'    => [ __( 'Borçlar', 'deniz-finans' ), 'page_borclar' ],
 			'dhf-yatirimlar' => [ __( 'Yatırımlar', 'deniz-finans' ), 'page_yatirimlar' ],
 			'dhf-bilanco'    => [ __( 'Varlıklar ve Bilanço', 'deniz-finans' ), 'page_bilanco' ],
@@ -98,6 +99,10 @@ final class DHF_Admin {
 
 	public function page_raporlar(): void {
 		DHF_Screen_Raporlar::render();
+	}
+
+	public function page_kartlar(): void {
+		DHF_Screen_Kartlar::render();
 	}
 
 	public function page_borclar(): void {

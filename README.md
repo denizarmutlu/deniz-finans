@@ -4,7 +4,7 @@ Kişisel gelir-gider, borç, yatırım ve bilanço takibi için WordPress eklent
 
 Google Sheets'te tutulan aylık nakit akışı tablosunun yerini almak için yazıldı. Temel fikir: **"gider" tek bir rakam değildir.** Kredi kartı ödemesi, kredi taksiti, faiz ve gerçek harcama ayrı sayaçlarda tutulur; böylece aynı para iki kez gider sayılmaz.
 
-## Durum — 0.6.2
+## Durum — 0.6.3
 
 | Bileşen | Sürüm | Durum |
 |---|---|---|
@@ -22,6 +22,7 @@ Google Sheets'te tutulan aylık nakit akışı tablosunun yerini almak için yaz
 | Gösterge Paneli (Bölge 1-2) ve WordPress Pano kutusu — tutarlar varsayılan gizli | 0.5 | Çalışıyor |
 | Karttan ödenen satır: hesap kredi kartıysa nakit çıkışı yerine kart borcu artışı | 0.6.1 | Çalışıyor + testli |
 | Aktarım: kart ekstresi profili (alt kategori ve hesap dosyada adıyla) | 0.6.1 | Çalışıyor + testli |
+| Kartlar ekranı: kart başına ay ay harcama, faiz, ödeme, fark; alt kategori dağılımı | 0.6.3 | Çalışıyor + testli |
 | Borçlar, yatırımlar, bilanço | 0.7–0.9 | Yer tutucu |
 
 ## Tiplenmiş etkiler — projenin çekirdeği
