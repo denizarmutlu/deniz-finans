@@ -71,6 +71,11 @@ final class DHF_Etki {
 			'etkiler' => [ [ 'tuketim_gideri', 1.0 ], [ 'borc_artisi', 1.0 ] ],
 			'aciklama' => 'Nakit çıkışı YARATMAZ; para henüz çıkmadı, borç arttı.',
 		],
+		'borc_kullanimi' => [
+			'etiket'  => 'Borç kullanımı (ek kaynak)',
+			'etkiler' => [ [ 'nakit_girisi', 1.0 ], [ 'borc_artisi', 1.0 ] ],
+			'aciklama' => 'Nakit avans ya da kredi kullanımı: para hesaba girer, borç artar. GELİR YARATMAZ.',
+		],
 		'transfer' => [
 			'etiket'  => 'Hesaplar arası transfer',
 			'etkiler' => [ [ 'transfer', 1.0 ] ],

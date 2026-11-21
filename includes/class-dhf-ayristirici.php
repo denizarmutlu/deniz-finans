@@ -36,6 +36,23 @@ final class DHF_Ayristirici {
 		// 0.6.1 — Kart ekstresi. Alt kategori dosyada adıyla gelir (işyeri adları
 		// eşleştirme sözlüğüne girmez); hesap kredi kartıysa satır nakit değil
 		// kart borcu üretir.
+		// 0.6.5 — BES sözleşmesinin yıllık hesap hareketleri. Kurumun kaydı doğru
+		// kaynaktır: ödenmiş katkı gerçek ödeme tarihiyle girer, ödenmemiş vade
+		// "bu ay gerçekleşmedi" olarak girer (görünür ama hiçbir toplama girmez).
+		'bes' => [
+			'etiket'   => 'BES hesap hareketleri (Tarih · Tür · Alt kategori · Açıklama · Tutar · Hesap · Not · Durum · Vade)',
+			'sutunlar' => [
+				'tarih'        => [ 'tarih', 'ödeme tarihi' ],
+				'tur'          => [ 'tür', 'tur' ],
+				'alt_kategori' => [ 'alt kategori', 'alt_kategori', 'sözleşme' ],
+				'aciklama'     => [ 'açıklama', 'aciklama' ],
+				'tutar'        => [ 'tutar', 'ödeme tutarı' ],
+				'hesap'        => [ 'hesap', 'kart' ],
+				'not'          => [ 'not' ],
+				'durum'        => [ 'durum' ],
+				'vade'         => [ 'vade', 'tahsilat vade tarihi' ],
+			],
+		],
 		'kart' => [
 			'etiket'   => 'Kart ekstresi (Tarih · Tür · Alt kategori · Açıklama · Tutar · Hesap · Not)',
 			'sutunlar' => [

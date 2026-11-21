@@ -553,6 +553,10 @@ final class DHF_Aktarim {
 				$ay    = (int) substr( (string) $r->tarih, 5, 2 );
 				$donem = DHF_Islem::donem( $yil, $ay );
 				$tutar = (float) $r->tutar;
+				// 0.6.5 — BES profilinde kurumun "Ödenmedi" dediği vade: satır girer ama
+				// gerçekleşmemiş sayılır, etkisi sıfırdır. Vadesi gelmemişse planlanandır.
+				$odenmedi = isset( $ham['durum'] )
+					&& str_contains( DHF_Ayristirici::normalize( (string) $ham['durum'] ), 'odenmedi' );
 				if ( ! DHF_Donem::duzenlenebilir( $donem ) ) {
 					$wpdb->query( 'ROLLBACK' );
 					return new WP_Error( 'kesin', sprintf( '%s kesinleşmiş; aktarım için önce ayı gerekçeyle yeniden aç. Hiçbir satır yazılmadı.', DHF_Takvim::ay_adi( $yil, $ay ) ) );
@@ -569,7 +573,7 @@ final class DHF_Aktarim {
 					'aciklama'      => mb_substr( trim( (string) ( $ham['aciklama'] ?? '' ) ), 0, 190 ),
 					'not_metni'     => '' === trim( (string) ( $ham['not'] ?? '' ) ) ? null : mb_substr( trim( (string) $ham['not'] ), 0, 255 ),
 					'tutar'         => $tutar,
-					'durum'         => $r->tarih > $bugun ? 'planlanan' : 'gerceklesti',
+					'durum'         => $odenmedi && $r->tarih <= $bugun ? 'gerceklesmedi' : ( $r->tarih > $bugun ? 'planlanan' : 'gerceklesti' ),
 					'kaynak'        => 'import',
 					'tekil_anahtar' => DHF_Ayristirici::tekil_anahtar( (string) $r->tarih, (string) $r->tur, (string) ( $ham['kategori'] ?? '' ), (string) ( $ham['aciklama'] ?? '' ), $tutar ),
 				] );
@@ -578,7 +582,7 @@ final class DHF_Aktarim {
 					$wpdb->query( 'ROLLBACK' );
 					return new WP_Error( 'db', sprintf( 'Kaynak satır %d yazılamadı; hiçbir satır yazılmadı.', (int) $r->kaynak_satir_no ) );
 				}
-				DHF_Etki::yaz( $islem_id, (string) $kalem->etki_profili, $tutar );
+				DHF_Etki::yaz( $islem_id, (string) $kalem->etki_profili, $odenmedi && $r->tarih <= $bugun ? 0.0 : $tutar );
 				$wpdb->update( $satir_t, [ 'onay_durumu' => 'yazildi', 'eslesen_islem_id' => $islem_id ], [ 'id' => (int) $r->id ] );
 				++$yazildi;
 			} elseif ( in_array( $r->onay_durumu, [ 'kuyruk', 'hazir' ], true ) ) {

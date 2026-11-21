@@ -85,6 +85,38 @@ final class DHF_Screen_Kartlar {
 			echo '</tbody></table>';
 		}
 
+		$gel = DHF_Kart::gelecek( $kart_id, 18 );
+		if ( $gel['planlar'] ) {
+			echo '<h2>' . esc_html__( 'Taksitli alışverişler ve gelecek yük', 'deniz-finans' ) . '</h2>';
+			echo '<p class="description">' . esc_html__( 'Defterde yalnızca ekstresi gelmiş taksitler var. Kalan taksitler buradaki tahmindir: taksit tutarının sabit kaldığı ve her ay aynı günde çekileceği varsayılır. Ekstresi geldikçe gerçek satır deftere girer ve bu tablo kendiliğinden küçülür.', 'deniz-finans' ) . '</p>';
+
+			echo '<table class="widefat striped dhf-tablo" style="max-width:900px"><thead><tr><th>Alışveriş</th><th class="dhf-sag">Toplam</th><th class="dhf-sag">Taksit</th><th class="dhf-sag">Ödenen</th><th class="dhf-sag">Kalan</th><th class="dhf-sag">Aylık</th><th class="dhf-sag">Kalan tutar</th></tr></thead><tbody>';
+			foreach ( $gel['planlar'] as $p ) {
+				printf( '<tr%s><td>%s</td><td class="dhf-sag dhf-soluk">%s</td><td class="dhf-sag">%d</td><td class="dhf-sag">%d</td><td class="dhf-sag"><strong>%d</strong></td><td class="dhf-sag">%s</td><td class="dhf-sag"><strong>%s</strong></td></tr>',
+					$p['kalan'] ? '' : ' class="dhf-soluk"',
+					esc_html( (string) $p['ad'] ),
+					esc_html( null === $p['toplam'] ? '—' : self::tl( (float) $p['toplam'] ) ),
+					(int) $p['adet'], (int) $p['odenen'], (int) $p['kalan'],
+					esc_html( self::tl( (float) $p['aylik'] ) ),
+					esc_html( $p['kalan'] ? self::tl( (float) $p['kalan_toplam'] ) : 'bitti' ) );
+			}
+			printf( '<tr class="dhf-toplam"><th colspan="6">%s</th><th class="dhf-sag">%s</th></tr></tbody></table>',
+				esc_html__( 'Kalan taksit borcu', 'deniz-finans' ), esc_html( self::tl( (float) $gel['kalan_toplam'] ) ) );
+
+			if ( $gel['aylar'] ) {
+				echo '<h3>' . esc_html__( 'Aylara düşen taksit', 'deniz-finans' ) . '</h3>';
+				echo '<table class="widefat striped dhf-tablo" style="max-width:520px"><thead><tr><th>Ay</th><th class="dhf-sag">Taksit yükü</th><th class="dhf-sag">Kümülatif</th></tr></thead><tbody>';
+				$kum = 0.0;
+				foreach ( $gel['aylar'] as $anahtar => $v ) {
+					$kum += $v;
+					[ $y, $a ] = array_map( 'intval', explode( '-', (string) $anahtar ) );
+					printf( '<tr><td>%s</td><td class="dhf-sag"><strong>%s</strong></td><td class="dhf-sag dhf-soluk">%s</td></tr>',
+						esc_html( DHF_Takvim::ay_adi( $y, $a ) ), esc_html( self::tl( (float) $v ) ), esc_html( self::tl( $kum ) ) );
+				}
+				echo '</tbody></table>';
+			}
+		}
+
 		if ( $ay ) {
 			echo '<h2>' . esc_html( DHF_Takvim::ay_adi( $yil, $ay ) ) . ' — ' . esc_html__( 'satırlar', 'deniz-finans' ) . '</h2>';
 			echo '<table class="widefat striped"><thead><tr><th>Tarih</th><th>Alt kategori</th><th>Açıklama</th><th>Not</th><th class="dhf-sag">Tutar</th></tr></thead><tbody>';
