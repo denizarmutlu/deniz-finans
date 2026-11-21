@@ -221,7 +221,43 @@ final class DHF_Pano {
 		}
 		echo '</div>';
 
-		echo '<div class="dhf-bolge dhf-soluk"><h2>Borç · Varlık ve net durum</h2><p>Toplam borç, faiz ve limit kullanımı 0.7\'de; portföy, reel getiri ve net durum 0.8–0.9\'da gelecek.</p></div>';
+		/* Bölge 3 — Borç (0.7) */
+		$byil  = (int) current_time( 'Y' );
+		$bay   = (int) current_time( 'n' );
+		$bozet = DHF_Borc::ozet( $byil, $bay );
+		$bfaiz = DHF_Borc::faiz_dokumu( $byil );
+		$bkmh  = round( $bfaiz['gruplar']['kmh'] + $bfaiz['gruplar']['avans'], 2 );
+
+		echo '<div class="dhf-bolge"><h2>Borç</h2><div class="dhf-toplam">';
+		printf( '<div class="dhf-kutu dhf-vurgu"><span class="dhf-kutu-etiket">Toplam borç</span><span class="dhf-kutu-deger">%s</span><span class="dhf-kutu-fark">%s</span></div>',
+			esc_html( $tl( $bozet['toplam'] ) ),
+			esc_html( sprintf( 'bildirilen %s · defterden %s', $tl( $bozet['bildirilen'] ), $tl( $bozet['hesaplanan'] ) ) ) );
+		printf( '<div class="dhf-kutu dhf-faiz"><span class="dhf-kutu-etiket">Bu ay faiz</span><span class="dhf-kutu-deger">%s</span><span class="dhf-kutu-fark">%s</span></div>',
+			esc_html( $tl( (float) ( $bfaiz['aylik'][ $bay ] ?? 0.0 ) ) ), esc_html( DHF_Takvim::AYLAR[ $bay ] ) );
+		printf( '<div class="dhf-kutu dhf-faiz"><span class="dhf-kutu-etiket">Yıl başından beri faiz</span><span class="dhf-kutu-deger">%s</span><span class="dhf-kutu-fark">%s</span></div>',
+			esc_html( $tl( $bfaiz['toplam'] ) ),
+			esc_html( null === $bfaiz['oran'] ? '' : sprintf( 'gelirin %%%s\'i', number_format_i18n( $bfaiz['oran'], 1 ) ) ) );
+		printf( '<div class="dhf-kutu"><span class="dhf-kutu-etiket">Kredili mevduat faizi</span><span class="dhf-kutu-deger">%s</span><span class="dhf-kutu-fark">%s</span></div>',
+			esc_html( $tl( $bkmh ) ), esc_html( sprintf( 'kart faizi %s', $tl( $bfaiz['gruplar']['kart'] ) ) ) );
+		echo '</div>';
+
+		$bdolu = [];
+		foreach ( $bozet['satirlar'] as $bs ) {
+			if ( null !== $bs['kullanim'] && $bs['kullanim'] >= 90 ) {
+				$bdolu[] = trim( (string) ( $bs['borc']->kurum ?: '' ) . ' ' . $bs['borc']->ad ) . sprintf( ' (%%%s)', number_format_i18n( $bs['kullanim'], 1 ) );
+			}
+		}
+		if ( $bdolu ) {
+			printf( '<p class="dhf-uyari-not">Limiti dolmak üzere: %s</p>', esc_html( implode( ' · ', $bdolu ) ) );
+		}
+		if ( $bozet['guncellenmemis'] ) {
+			printf( '<p class="dhf-soluk">%s</p>', esc_html( sprintf( '%d borcun bu ay rakamı yok: %s',
+				count( $bozet['guncellenmemis'] ), implode( ' · ', $bozet['guncellenmemis'] ) ) ) );
+		}
+		printf( '<p><a href="%s">Bakiye gir, faiz panelini gör → Borçlar</a></p>', self::link( 'dhf-borclar' ) );
+		echo '</div>';
+
+		echo '<div class="dhf-bolge dhf-soluk"><h2>Varlık ve net durum</h2><p>Portföy, reel getiri ve net durum 0.8–0.9\'da gelecek.</p></div>';
 		echo '</div>';
 		echo '<style>
 		.dhf-bolge{background:#fff;border:1px solid #c3c4c7;padding:4px 18px 14px;margin:14px 0;max-width:1100px}

@@ -35,6 +35,7 @@ final class DHF_Admin {
 		add_action( 'admin_post_dhf_hesap', [ DHF_Screen_Hesaplar::class, 'handle' ] );
 		add_action( 'admin_post_dhf_rapor_csv', [ DHF_Screen_Raporlar::class, 'handle_csv' ] );
 		add_action( 'admin_post_dhf_pano_goster', [ DHF_Pano::class, 'handle_goster' ] );
+		add_action( 'admin_post_dhf_borc_foto', [ DHF_Screen_Borclar::class, 'handle' ] );
 		// WordPress Pano kutusu (§5.11) — yetkisi olmayana kaydedilmez.
 		add_action( 'wp_dashboard_setup', [ DHF_Pano::class, 'kaydet' ] );
 	}
@@ -106,12 +107,7 @@ final class DHF_Admin {
 	}
 
 	public function page_borclar(): void {
-		$this->stub( __( 'Borçlar', 'deniz-finans' ), '0.7', [
-			'Tek tabloda kartlar, KMH\'ler ve krediler; beş bakiye tipi ayrı kolonlarda',
-			'Güncellik kolonu: "bu ay girildi" / "geçen aydan taşındı"',
-			'Faiz paneli: aylık ve yıllık faiz, kurum kırılımı, efektif oran',
-			'Para birimi: TL / USD / EUR / altın gram — TL karşılığı her ay hesaplanır',
-		] );
+		DHF_Screen_Borclar::render();
 	}
 
 	public function page_yatirimlar(): void {
