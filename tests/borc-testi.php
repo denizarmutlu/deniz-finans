@@ -98,6 +98,8 @@ kontrol( 'Eksi hesaplanan varken tahmine düşmez', 'acilis_eksik' === DHF_Borc:
 kontrol( 'Altı bakiye tipi var (acilis dahil)', 6 === count( DHF_Borc::BAKIYE_TIPLERI ) );
 kontrol( 'Kredide kapama bakiyesi var, ekstre borcu yok',
 	in_array( 'kapama_bakiyesi', DHF_Borc::TIP_BAKIYE['kredi'], true ) && ! in_array( 'ekstre_borcu', DHF_Borc::TIP_BAKIYE['kredi'], true ) );
+kontrol( 'Kartta ekstre borcu en çok tercih edilen (0.7.3)',
+	'ekstre_borcu' === DHF_Borc::TIP_BAKIYE['kredi_karti'][ count( DHF_Borc::TIP_BAKIYE['kredi_karti'] ) - 1 ] );
 kontrol( 'Kartta ekstre borcu var, kalan anapara yok',
 	in_array( 'ekstre_borcu', DHF_Borc::TIP_BAKIYE['kredi_karti'], true ) && ! in_array( 'kalan_anapara', DHF_Borc::TIP_BAKIYE['kredi_karti'], true ) );
 

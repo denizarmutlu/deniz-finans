@@ -46,7 +46,10 @@ final class DHF_Borc {
 
 	/** Hangi borç tipinde hangi bakiye tipleri anlamlı. */
 	public const TIP_BAKIYE = [
-		'kredi_karti' => [ 'acilis', 'ekstre_borcu', 'guncel_borc' ],
+		// Sıra önemli: ozet() tersten dener, yani en sondaki en çok tercih edilir.
+		// Ekstre borcu bankanın resmî rakamıdır; Sheets'ten gelen "güncel borç"
+		// ondan sonra gelir (0.7.3).
+		'kredi_karti' => [ 'acilis', 'guncel_borc', 'ekstre_borcu' ],
 		'kmh'         => [ 'acilis', 'guncel_borc', 'kullanilan_anapara' ],
 		'kredi'       => [ 'kalan_anapara', 'kapama_bakiyesi' ],
 		'sahis'       => [ 'guncel_borc' ],
