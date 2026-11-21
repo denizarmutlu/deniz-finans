@@ -52,6 +52,15 @@ kontrol( 'Veri yoksa null (tahmin edilmez)', null === DHF_Borc::kalan_taksit( nu
 kontrol( 'Bitişi geçmiş kredi null', null === DHF_Borc::kalan_taksit( null, null, '2026-01-01', '2026-11-21' ) );
 kontrol( 'Taksit numarası bitişten önce gelir', 77 === DHF_Borc::kalan_taksit( 43, 120, '2033-04-15', '2026-11-21' ) );
 
+/* ---- Kalan taksit geçmiş aylarda ---- */
+kontrol( 'Kasım\'da 77 kalan → Ocak\'ta 87', 87 === DHF_Borc::kalan_taksit_ayinda( 77, 120, 2026, 1, 2026, 11 ) );
+kontrol( 'Şubat\'ta 86 (Sheets notu 34/120 ile tutuyor)', 86 === DHF_Borc::kalan_taksit_ayinda( 77, 120, 2026, 2, 2026, 11 ) );
+kontrol( 'Bu ay değişmez', 77 === DHF_Borc::kalan_taksit_ayinda( 77, 120, 2026, 11, 2026, 11 ) );
+kontrol( 'Gelecek ay bir azalır', 76 === DHF_Borc::kalan_taksit_ayinda( 77, 120, 2026, 12, 2026, 11 ) );
+kontrol( 'Toplam taksidi aşmaz', 120 === DHF_Borc::kalan_taksit_ayinda( 77, 120, 2020, 1, 2026, 11 ) );
+kontrol( 'Sıfırın altına düşmez', 0 === DHF_Borc::kalan_taksit_ayinda( 3, 22, 2027, 6, 2026, 11 ) );
+kontrol( 'Toplam bilinmiyorsa sınır yok (5 + 89 ay)', 94 === DHF_Borc::kalan_taksit_ayinda( 5, null, 2019, 6, 2026, 11 ) );
+
 /* ---- Limit kullanımı ---- */
 kontrol( 'Kullanım %90,0', 90.0 === DHF_Borc::kullanim( 18000.0, 20000.0 ) );
 kontrol( 'Limit yoksa null', null === DHF_Borc::kullanim( 18000.0, null ) );

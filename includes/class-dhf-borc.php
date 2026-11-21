@@ -183,6 +183,23 @@ final class DHF_Borc {
 		return [ null, 'yok' ];
 	}
 
+	/**
+	 * Kalan taksidin geçmiş/gelecek bir aydaki hali.
+	 *
+	 * `kalan_taksit()` bugünün rakamını verir. Geçmiş bir ayın borcunu bugünün
+	 * taksit sayısıyla hesaplamak yanlış olur: Ocak 2026'da konut kredisinin
+	 * 77 değil 87 taksidi kalmıştı. Taksitler aylık olduğu için fark, iki ay
+	 * arasındaki ay sayısıdır. Toplam taksit biliniyorsa onunla sınırlanır.
+	 */
+	public static function kalan_taksit_ayinda( int $kalan_bugun, ?int $taksit_toplam, int $yil, int $ay, int $bugun_yil, int $bugun_ay ): int {
+		$fark  = ( $bugun_yil - $yil ) * 12 + ( $bugun_ay - $ay );
+		$kalan = $kalan_bugun + $fark;
+		if ( $taksit_toplam ) {
+			$kalan = min( $kalan, $taksit_toplam );
+		}
+		return max( 0, $kalan );
+	}
+
 	/** Limit kullanımı yüzdesi; limit yoksa null. */
 	public static function kullanim( ?float $bakiye, ?float $limit ): ?float {
 		if ( null === $bakiye || ! $limit || $limit <= 0 ) {
@@ -463,7 +480,14 @@ final class DHF_Borc {
 			);
 			$tahmin_tutar = null;
 			if ( 'kredi' === $tip && $kalan && $b->aylik_taksit ) {
-				$tahmin_tutar = round( $kalan * (float) $b->aylik_taksit, 2 );
+				$kalan_o_ay   = self::kalan_taksit_ayinda(
+					$kalan,
+					null !== $b->taksit_toplam ? (int) $b->taksit_toplam : null,
+					$yil, $ay,
+					(int) current_time( 'Y' ), (int) current_time( 'n' )
+				);
+				$tahmin_tutar = $kalan_o_ay ? round( $kalan_o_ay * (float) $b->aylik_taksit, 2 ) : null;
+				$kalan        = $kalan_o_ay;
 			}
 
 			[ $bakiye, $kaynak ] = self::bakiye_sec( $bildirilen_tutar, $hesaplanan_tutar, $tahmin_tutar );
