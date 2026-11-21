@@ -500,8 +500,11 @@ final class DHF_Borc {
 			[ $bakiye, $kaynak ] = self::bakiye_sec( $bildirilen_tutar, $hesaplanan_tutar, $tahmin_tutar );
 
 			if ( null === $bakiye ) {
-				++$eksik;
+				// Pasif borç (kapanmış kart, bitmiş avans) eksik sayılmaz: rakamı
+				// yok çünkü borç yok. 0.7.5 öncesinde sayaç bunları da sayıyor,
+				// isim listeleri saymıyordu; ekranda tutarsız görünüyordu.
 				if ( $b->aktif ) {
+					++$eksik;
 					$ad_tam = trim( (string) ( $b->kurum ?: '' ) . ' ' . $b->ad );
 					if ( 'acilis_eksik' === $kaynak ) {
 						$acilis_eksik[] = $ad_tam;
