@@ -51,7 +51,11 @@ final class DHF_Borc {
 		// ondan sonra gelir (0.7.3).
 		'kredi_karti' => [ 'acilis', 'guncel_borc', 'ekstre_borcu' ],
 		'kmh'         => [ 'acilis', 'guncel_borc', 'kullanilan_anapara' ],
-		'kredi'       => [ 'kalan_anapara', 'kapama_bakiyesi' ],
+		// Kredide kalan anapara tercih edilir (0.7.4): kapama bakiyesi, anaparanın
+		// üstüne işlemiş faizi ve erken kapama tazminatını da ekler (Halkbank
+		// konutta 16.414 TL fark), yani "bugün kapatsam ne öderim" rakamıdır,
+		// aylık seyirde karşılaştırılabilir olan ise kalan anaparadır.
+		'kredi'       => [ 'kapama_bakiyesi', 'kalan_anapara' ],
 		'sahis'       => [ 'guncel_borc' ],
 	];
 
