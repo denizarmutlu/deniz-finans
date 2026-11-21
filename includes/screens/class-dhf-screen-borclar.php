@@ -92,6 +92,12 @@ final class DHF_Screen_Borclar {
 
 		echo '<p class="description">' . esc_html__( 'Bakiye iki kaynaktan gelebilir. "Hesaplanan": defterdeki satırlardan yürütülür (açılış + harcama + faiz − ödeme) ve yalnızca kredi kartlarında anlamlıdır. "Bildirilen": bankanın söylediği rakam, aşağıdaki formla girilir. Kesim günleri ayın 7, 13, 14, 15 ve 19\'u olduğu için hesaplanan ile ekstre borcu birebir tutmaz; fark bilgidir, hata değil. KMH\'de bakiye defterden yürütülemez — hesaba giren para defterde yok — bu yüzden yalnız bildirilen rakamla izlenir.', 'deniz-finans' ) . '</p>';
 
+		if ( $ozet['acilis_eksik'] ) {
+			printf( '<div class="notice notice-warning inline"><p><strong>%s</strong> %s</p></div>',
+				esc_html__( 'Açılış (devir) bakiyesi eksik:', 'deniz-finans' ),
+				esc_html( implode( ' · ', $ozet['acilis_eksik'] ) . ' — bu kart(lar)ın yıl içindeki ödemesi harcamasından fazla, yani yıla devreden bir borçla başlamış. Devir girilmeden bakiye hesaplanamaz; aşağıdan "Açılış (devir)" olarak Ocak ayına girin.' ) );
+		}
+
 		if ( $ozet['guncellenmemis'] ) {
 			printf( '<div class="notice notice-warning inline"><p><strong>%s</strong> %s</p></div>',
 				esc_html( sprintf( '%d borcun bu ay rakamı yok:', count( $ozet['guncellenmemis'] ) ) ),
@@ -113,7 +119,13 @@ final class DHF_Screen_Borclar {
 			$ad     = trim( (string) ( $b->kurum ?: '' ) . ' · ' . $b->ad, ' ·' );
 			$degisim = null !== $s['bakiye'] && null !== $s['onceki'] ? round( $s['bakiye'] - $s['onceki'], 2 ) : null;
 			$sinif  = $b->aktif ? '' : ' class="dhf-soluk"';
-			$kaynak_etiket = [ 'bildirilen' => 'banka', 'hesaplanan' => 'defterden', 'tahmin' => 'tahmin', '—' => 'veri yok' ][ $s['kaynak'] ] ?? $s['kaynak'];
+			$kaynak_etiket = [
+				'bildirilen'   => 'banka',
+				'hesaplanan'   => 'defterden',
+				'tahmin'       => 'tahmin',
+				'acilis_eksik' => 'açılış eksik',
+				'yok'          => 'veri yok',
+			][ $s['kaynak'] ] ?? $s['kaynak'];
 
 			printf( '<tr%s><td><a href="%s"><strong>%s</strong></a>%s</td><td>%s</td><td>%s</td><td class="dhf-sag">%s</td><td class="dhf-sag"><strong>%s</strong></td><td>%s</td><td class="dhf-sag%s">%s</td><td class="dhf-sag">%s</td><td class="dhf-sag">%s</td><td class="dhf-sag">%s</td><td class="dhf-sag%s">%s</td><td class="dhf-sag">%s</td></tr>',
 				$sinif,
@@ -249,6 +261,10 @@ final class DHF_Screen_Borclar {
 					esc_html( null === $fark ? '—' : ( $fark > 0 ? '+' : '' ) . self::tl( $fark ) ) );
 			}
 			echo '</tbody></table>';
+			$eksi = array_filter( $durum['seyir'], static fn( array $r ): bool => $r['hareket'] && $r['kapanis'] < 0 );
+			if ( $eksi ) {
+				printf( '<p class="dhf-uyari-not">%s</p>', esc_html__( 'Kapanış eksiye düşüyor: açılış (devir) bakiyesi girilmemiş ya da yıl başındaki ekstreler defterde yok. Rakamlar hareketin yönünü gösterir, bakiyeyi göstermez.', 'deniz-finans' ) );
+			}
 		} else {
 			printf( '<p class="description">%s</p>', esc_html(
 				'kmh' === $tip

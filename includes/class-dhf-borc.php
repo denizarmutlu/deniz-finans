@@ -158,6 +158,31 @@ final class DHF_Borc {
 		return null;
 	}
 
+	/**
+	 * Hangi rakam gösterilecek? Sıra: bankanın bildirdiği → defterden
+	 * hesaplanan → kredide kalan taksitten tahmin.
+	 *
+	 * Hesaplanan bakiye EKSİYSE bu bir bakiye değil, eksik açılış işaretidir:
+	 * o kartın yıl içindeki ödemeleri harcamasından fazla, yani yıla devreden
+	 * bir borçla başlamış ama devir girilmemiş. Eksi rakamı mutlak değeriyle
+	 * borca eklemek toplamı şişirir, sıfır saymak da gizler — bu yüzden
+	 * "veri yok" sayılır ve ekranda açılışın girilmesi istenir.
+	 *
+	 * @return array{0:?float,1:string}
+	 */
+	public static function bakiye_sec( ?float $bildirilen, ?float $hesaplanan, ?float $tahmin ): array {
+		if ( null !== $bildirilen ) {
+			return [ $bildirilen, 'bildirilen' ];
+		}
+		if ( null !== $hesaplanan ) {
+			return $hesaplanan < 0 ? [ null, 'acilis_eksik' ] : [ $hesaplanan, 'hesaplanan' ];
+		}
+		if ( null !== $tahmin ) {
+			return [ $tahmin, 'tahmin' ];
+		}
+		return [ null, 'yok' ];
+	}
+
 	/** Limit kullanımı yüzdesi; limit yoksa null. */
 	public static function kullanim( ?float $bakiye, ?float $limit ): ?float {
 		if ( null === $bakiye || ! $limit || $limit <= 0 ) {
@@ -374,7 +399,7 @@ final class DHF_Borc {
 	/**
 	 * Üst şerit: borç başına o ayın bakiyesi, kaynağı ve güncelliği.
 	 *
-	 * @return array{satirlar:array<int,array<string,mixed>>,toplam:float,bildirilen:float,hesaplanan:float,eksik:int,guncellenmemis:array<int,string>}
+	 * @return array{satirlar:array<int,array<string,mixed>>,toplam:float,bildirilen:float,hesaplanan:float,eksik:int,guncellenmemis:array<int,string>,acilis_eksik:array<int,string>}
 	 */
 	public static function ozet( int $yil, int $ay ): array {
 		$fotolar  = self::fotolar_hepsi( $yil );
@@ -384,6 +409,7 @@ final class DHF_Borc {
 		$hesaplanan = 0.0;
 		$eksik    = 0;
 		$guncel_degil = [];
+		$acilis_eksik = [];
 		$bugun    = current_time( 'Y-m-d' );
 
 		foreach ( self::borclar() as $b ) {
@@ -412,10 +438,11 @@ final class DHF_Borc {
 			}
 
 			// 2) Yoksa defterden hesaplanan (yalnız kart)
+			$bildirilen_tutar = $bakiye;
+			$hesaplanan_tutar = null;
 			$durum = self::durum( $b, $yil );
-			if ( null === $bakiye && $durum['hesaplanabilir'] && isset( $durum['seyir'][ $ay ] ) ) {
-				$bakiye = $durum['seyir'][ $ay ]['kapanis'];
-				$kaynak = 'hesaplanan';
+			if ( $durum['hesaplanabilir'] && isset( $durum['seyir'][ $ay ] ) ) {
+				$hesaplanan_tutar = $durum['seyir'][ $ay ]['kapanis'];
 			}
 			if ( $durum['hesaplanabilir'] && isset( $durum['seyir'][ $ay ] ) ) {
 				$onceki = $durum['seyir'][ $ay ]['acilis'];
@@ -434,15 +461,22 @@ final class DHF_Borc {
 				$b->bitis_tarihi ? (string) $b->bitis_tarihi : null,
 				$bugun
 			);
-			if ( null === $bakiye && 'kredi' === $tip && $kalan && $b->aylik_taksit ) {
-				$bakiye = round( $kalan * (float) $b->aylik_taksit, 2 );
-				$kaynak = 'tahmin';
+			$tahmin_tutar = null;
+			if ( 'kredi' === $tip && $kalan && $b->aylik_taksit ) {
+				$tahmin_tutar = round( $kalan * (float) $b->aylik_taksit, 2 );
 			}
+
+			[ $bakiye, $kaynak ] = self::bakiye_sec( $bildirilen_tutar, $hesaplanan_tutar, $tahmin_tutar );
 
 			if ( null === $bakiye ) {
 				++$eksik;
 				if ( $b->aktif ) {
-					$guncel_degil[] = trim( (string) ( $b->kurum ?: '' ) . ' ' . $b->ad );
+					$ad_tam = trim( (string) ( $b->kurum ?: '' ) . ' ' . $b->ad );
+					if ( 'acilis_eksik' === $kaynak ) {
+						$acilis_eksik[] = $ad_tam;
+					} else {
+						$guncel_degil[] = $ad_tam;
+					}
 				}
 			} else {
 				$toplam += abs( $bakiye );
@@ -475,6 +509,7 @@ final class DHF_Borc {
 			'hesaplanan'     => round( $hesaplanan, 2 ),
 			'eksik'          => $eksik,
 			'guncellenmemis' => $guncel_degil,
+			'acilis_eksik'   => $acilis_eksik,
 		];
 	}
 

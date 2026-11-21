@@ -250,9 +250,10 @@ final class DHF_Pano {
 		if ( $bdolu ) {
 			printf( '<p class="dhf-uyari-not">Limiti dolmak üzere: %s</p>', esc_html( implode( ' · ', $bdolu ) ) );
 		}
-		if ( $bozet['guncellenmemis'] ) {
+		$beksik = array_merge( $bozet['guncellenmemis'], $bozet['acilis_eksik'] );
+		if ( $beksik ) {
 			printf( '<p class="dhf-soluk">%s</p>', esc_html( sprintf( '%d borcun bu ay rakamı yok: %s',
-				count( $bozet['guncellenmemis'] ), implode( ' · ', $bozet['guncellenmemis'] ) ) ) );
+				count( $beksik ), implode( ' · ', $beksik ) ) ) );
 		}
 		printf( '<p><a href="%s">Bakiye gir, faiz panelini gör → Borçlar</a></p>', self::link( 'dhf-borclar' ) );
 		echo '</div>';

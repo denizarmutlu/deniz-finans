@@ -75,6 +75,16 @@ kontrol( 'Pencere 6 ayı aşmaz', 6 === count( $tak2['aylar'] ) );
 kontrol( 'Pencere kalan toplamı kısmaz', 78000.0 === $tak2['toplam'] );
 kontrol( 'Yıl sonu Aralık→Ocak döner', isset( $tak2['aylar']['2027-01'] ) );
 
+/* ---- Bakiye kaynağı seçimi: eksi hesaplanan bakiye "veri yok"tur ---- */
+kontrol( 'Banka rakamı varsa o kazanır', [ 18760.0, 'bildirilen' ] === DHF_Borc::bakiye_sec( 18760.0, 5000.0, 9999.0 ) );
+kontrol( 'Banka yoksa defterden hesaplanan', [ 44314.99, 'hesaplanan' ] === DHF_Borc::bakiye_sec( null, 44314.99, null ) );
+kontrol( 'Eksi hesaplanan bakiye → açılış eksik (toplama girmez)', [ null, 'acilis_eksik' ] === DHF_Borc::bakiye_sec( null, -719567.78, null ) );
+kontrol( 'Sıfır hesaplanan bakiye geçerlidir', [ 0.0, 'hesaplanan' ] === DHF_Borc::bakiye_sec( null, 0.0, null ) );
+kontrol( 'Eksi bildirilen rakam olduğu gibi kalır', [ -500.0, 'bildirilen' ] === DHF_Borc::bakiye_sec( -500.0, null, null ) );
+kontrol( 'Hesaplanamayanda kalan taksit tahmini', [ 49275.0, 'tahmin' ] === DHF_Borc::bakiye_sec( null, null, 49275.0 ) );
+kontrol( 'Hiçbiri yoksa veri yok', [ null, 'yok' ] === DHF_Borc::bakiye_sec( null, null, null ) );
+kontrol( 'Eksi hesaplanan varken tahmine düşmez', 'acilis_eksik' === DHF_Borc::bakiye_sec( null, -100.0, 5000.0 )[1] );
+
 /* ---- Bakiye tipi tanımları ---- */
 kontrol( 'Altı bakiye tipi var (acilis dahil)', 6 === count( DHF_Borc::BAKIYE_TIPLERI ) );
 kontrol( 'Kredide kapama bakiyesi var, ekstre borcu yok',
