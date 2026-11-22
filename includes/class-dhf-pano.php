@@ -101,7 +101,12 @@ final class DHF_Pano {
 			echo '</ul>';
 		}
 
-		/* 3. Rakamlar */
+		/* 3. Kira artışı — tutar gizliyken HTML'e yazılmaz. */
+		foreach ( DHF_Kira::yenilemeler() as $y ) {
+			printf( '<p class="dhf-pano-uyari">%s</p>', esc_html( DHF_Kira::metin( $y, $goster ) ) );
+		}
+
+		/* 4. Rakamlar */
 		if ( $v['t'] ) {
 			$rd   = $v['rakam_donem'];
 			$baska = (int) $rd->yil !== $v['yil'] || (int) $rd->ay !== $v['ay'];
@@ -114,7 +119,7 @@ final class DHF_Pano {
 			echo '</div>';
 		}
 
-		/* 4. Bekleyenler */
+		/* 5. Bekleyenler */
 		if ( $v['aktarim'] ) {
 			printf( '<p><a href="%s">%s</a></p>', self::link( 'dhf-aktarim' ), esc_html( sprintf( '%d aktarım onay bekliyor →', $v['aktarim'] ) ) );
 		}
@@ -173,6 +178,11 @@ final class DHF_Pano {
 		}
 		if ( $v['tarihsiz'] ) {
 			printf( '<p class="dhf-uyari-not">Deniz Hesap\'ta tarihi boş %d ödenmiş hareket var; hiçbir aya düşmüyor.</p>', (int) $v['tarihsiz'] );
+		}
+		/* Kira artışı: yenileme ayından bir ay önce girer, ay gelince "zamanı geldi"ye döner. */
+		foreach ( DHF_Kira::yenilemeler() as $y ) {
+			printf( '<p class="%s"><strong>%s</strong></p>',
+				'gecikti' === $y['durum'] ? 'dhf-uyari-not' : '', esc_html( DHF_Kira::metin( $y ) ) );
 		}
 		echo '<h3>Önümüzdeki 10 günde elle ödenecekler</h3>';
 		$elle = DHF_Rapor::elle_odenecekler( 10, 20 );

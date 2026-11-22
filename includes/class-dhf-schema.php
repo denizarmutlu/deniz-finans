@@ -359,6 +359,7 @@ final class DHF_Schema {
 			baslangic date NOT NULL,
 			bitis date DEFAULT NULL,
 			aylik_kira decimal(18,2) NOT NULL,
+			yenileme_ay tinyint(2) unsigned DEFAULT NULL,
 			kiraci_adi varchar(190) DEFAULT NULL,
 			not_metni text DEFAULT NULL,
 			PRIMARY KEY  (id),
