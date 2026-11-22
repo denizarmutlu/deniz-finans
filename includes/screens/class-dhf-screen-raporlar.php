@@ -119,15 +119,23 @@ final class DHF_Screen_Raporlar {
 
 		self::kesinlik_notu( $p['yil'] );
 
-		/* CSV */
-		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" style="margin-top:12px">';
-		wp_nonce_field( 'dhf_rapor_csv' );
-		echo '<input type="hidden" name="action" value="dhf_rapor_csv">';
-		foreach ( $p as $k => $v ) {
-			printf( '<input type="hidden" name="%s" value="%s">', esc_attr( $k ), esc_attr( (string) $v ) );
+		/* İndirme: CSV bu tabloyu, XLSX dört sekmeyi birden verir. */
+		echo '<div class="dhf-indir">';
+		$indirmeler = [ 'csv' => __( 'CSV indir (bu tablo)', 'deniz-finans' ) ];
+		if ( DHF_Xlsx::destekli() ) {
+			$indirmeler['xlsx'] = __( 'XLSX indir (dört sekme)', 'deniz-finans' );
 		}
-		submit_button( __( 'CSV indir', 'deniz-finans' ), 'secondary', 'submit', false );
-		echo '</form>';
+		foreach ( $indirmeler as $tip => $etiket ) {
+			echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+			wp_nonce_field( 'dhf_rapor_' . $tip );
+			printf( '<input type="hidden" name="action" value="dhf_rapor_%s">', esc_attr( $tip ) );
+			foreach ( $p as $k => $v ) {
+				printf( '<input type="hidden" name="%s" value="%s">', esc_attr( $k ), esc_attr( (string) $v ) );
+			}
+			submit_button( $etiket, 'secondary', 'submit_' . $tip, false );
+			echo '</form>';
+		}
+		echo '</div>';
 
 		echo '</div>';
 		self::stil();
@@ -211,6 +219,40 @@ final class DHF_Screen_Raporlar {
 		exit;
 	}
 
+	/**
+	 * XLSX — dört sekme tek çalışma kitabında.
+	 *
+	 * CSV tek tablo verir; XLSX'in tek kazancı çok sayfa olduğu için burada seçili
+	 * sekme değil hepsi yazılır. Yıl, görünüm, kırılım ve karşılaştırılan yıl
+	 * ekrandaki seçimden gelir — sekme adına görünüm de yazılır (kabul senaryosu 19).
+	 */
+	public static function handle_xlsx(): void {
+		DHF_Caps::guard();
+		check_admin_referer( 'dhf_rapor_xlsx' );
+		if ( ! DHF_Xlsx::destekli() ) {
+			wp_die( esc_html__( 'Sunucuda ZipArchive yok; XLSX üretilemiyor. CSV indirmeyi kullanın.', 'deniz-finans' ) );
+		}
+		$p = self::parametreler( wp_unslash( $_POST ) );
+
+		$sayfalar = [];
+		foreach ( self::SEKMELER as $sekme => $ad ) {
+			$t = self::tablo( [ 'sekme' => $sekme ] + $p );
+			if ( ! $t['satirlar'] ) {
+				continue;
+			}
+			if ( in_array( $sekme, [ 'pivot', 'yil' ], true ) ) {
+				[ $g_etiket ] = DHF_Rapor::GORUNUMLER[ $p['gorunum'] ];
+				$ad          .= ' (' . $g_etiket . ')';
+			}
+			$sayfalar[] = [ 'ad' => $ad ] + $t;
+		}
+		if ( ! $sayfalar ) {
+			wp_die( esc_html( sprintf( __( '%d için defterde veri yok.', 'deniz-finans' ), $p['yil'] ) ) );
+		}
+
+		DHF_Xlsx::gonder( sanitize_file_name( sprintf( 'deniz-finans-%d-%s.xlsx', $p['yil'], $p['gorunum'] ) ), $sayfalar );
+	}
+
 	public static function stil(): void {
 		echo '<style>
 		.dhf-secici{display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin:14px 0}
@@ -223,6 +265,7 @@ final class DHF_Screen_Raporlar {
 		.dhf-rapor .dhf-bos-satir td{color:#a7aaad}
 		.dhf-sag{text-align:right}.dhf-eksi{color:#b32d2e}.dhf-soluk{color:#646970;font-size:12px}
 		.dhf-uyari-not{color:#8a6100}
+		.dhf-indir{display:flex;gap:10px;align-items:flex-start;margin-top:12px}
 		</style>';
 	}
 }

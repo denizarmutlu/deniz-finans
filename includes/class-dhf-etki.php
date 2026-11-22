@@ -49,7 +49,7 @@ final class DHF_Etki {
 		'kredi_taksit' => [
 			'etiket'  => 'Kredi taksiti',
 			'etkiler' => [ [ 'nakit_cikisi', 1.0 ] ],
-			'aciklama' => 'Tüketim gideri YARATMAZ. Anapara/faiz dağılımı bilinmediği için tahmin edilmez.',
+			'aciklama' => 'Tuketim gideri YARATMAZ. Odeme plani girilmisse faiz kismi ayrica faiz_masraf olarak yazilir (G12).',
 		],
 		'kart_odeme' => [
 			'etiket'  => 'Kart / borç ödemesi',
@@ -104,7 +104,7 @@ final class DHF_Etki {
 	 *
 	 * @return array<int,array{etki_tipi:string,tutar:float}>
 	 */
-	public static function uret( string $profil, float $tutar, bool $karta = false ): array {
+	public static function uret( string $profil, float $tutar, bool $karta = false, float $faiz = 0.0 ): array {
 		if ( ! isset( self::PROFILLER[ $profil ] ) ) {
 			return [];
 		}
@@ -114,6 +114,9 @@ final class DHF_Etki {
 				$tip = 'borc_artisi';
 			}
 			$out[] = [ 'etki_tipi' => $tip, 'tutar' => round( $tutar * $oran, 2 ) ];
+		}
+		if ( 'kredi_taksit' === $profil && $faiz > 0.0 ) {
+			$out[] = [ 'etki_tipi' => 'faiz_masraf', 'tutar' => round( $faiz, 2 ) ];
 		}
 		return $out;
 	}
@@ -135,16 +138,38 @@ final class DHF_Etki {
 		global $wpdb;
 		$tablo = DHF_Schema::table( 'islem_etki' );
 		$karta = $karta ?? self::karta_mi( $islem_id );
+		$faiz  = ( 'kredi_taksit' === $profil && $tutar > 0.0 ) ? self::kredi_faizi( $islem_id ) : 0.0;
 
 		$wpdb->delete( $tablo, [ 'islem_id' => $islem_id ], [ '%d' ] );
 
-		foreach ( self::uret( $profil, $tutar, $karta ) as $e ) {
+		foreach ( self::uret( $profil, $tutar, $karta, $faiz ) as $e ) {
 			$wpdb->insert( $tablo, [
 				'islem_id'  => $islem_id,
 				'etki_tipi' => $e['etki_tipi'],
 				'tutar'     => $e['tutar'],
 			], [ '%d', '%s', '%f' ] );
 		}
+	}
+
+	/**
+	 * Kredi taksidinin faiz kismi (G12).
+	 *
+	 * Odeme plani borc_foto.faiz kolonunda duruyor. Satirin kalemi bir borca
+	 * bagliysa ve o donemin fotografinda faiz varsa, kredi taksiti tek etki
+	 * yerine nakit_cikisi + faiz_masraf uretir. Anapara kismi
+	 * nakit_cikisi - faiz_masraf olarak turetilir; borc_azaltimi sayacina
+	 * YAZILMAZ, cunku o sayac kart odemelerini sayiyor ve ikisi karismamali.
+	 */
+	public static function kredi_faizi( int $islem_id ): float {
+		global $wpdb;
+		return (float) $wpdb->get_var( $wpdb->prepare(
+			'SELECT f.faiz FROM ' . DHF_Schema::table( 'borc_foto' ) . ' f
+			 INNER JOIN ' . DHF_Schema::table( 'islem' ) . ' i ON i.donem_id = f.donem_id
+			 INNER JOIN ' . DHF_Schema::table( 'kalem' ) . ' k ON k.id = i.kalem_id AND k.borc_id = f.borc_id
+			 WHERE i.id = %d AND f.faiz IS NOT NULL AND f.faiz > 0
+			 ORDER BY f.id ASC LIMIT 1',
+			$islem_id
+		) );
 	}
 
 	/** Kısa gösterim: "nakit çıkışı + borç azaltımı" */

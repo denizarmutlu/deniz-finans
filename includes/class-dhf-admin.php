@@ -34,6 +34,7 @@ final class DHF_Admin {
 		add_action( 'admin_post_dhf_aktarim_sil', [ DHF_Screen_Aktarim::class, 'handle_sil' ] );
 		add_action( 'admin_post_dhf_hesap', [ DHF_Screen_Hesaplar::class, 'handle' ] );
 		add_action( 'admin_post_dhf_rapor_csv', [ DHF_Screen_Raporlar::class, 'handle_csv' ] );
+		add_action( 'admin_post_dhf_rapor_xlsx', [ DHF_Screen_Raporlar::class, 'handle_xlsx' ] );
 		add_action( 'admin_post_dhf_pano_goster', [ DHF_Pano::class, 'handle_goster' ] );
 		add_action( 'admin_post_dhf_borc_foto', [ DHF_Screen_Borclar::class, 'handle' ] );
 		// WordPress Pano kutusu (§5.11) — yetkisi olmayana kaydedilmez.
