@@ -112,12 +112,7 @@ final class DHF_Admin {
 	}
 
 	public function page_yatirimlar(): void {
-		$this->stub( __( 'Yatırımlar', 'deniz-finans' ), '0.8', [
-			'Varlık ağacı: Kurum → Tür → Enstrüman',
-			'Doğru getiri hesabı: katkılar ve devlet katkısı düşülür',
-			'BES: sözleşme → fon dağılımı, 12 fon değişim hakkı sayacı',
-			'Açılış envanteri 31.12.2026',
-		] );
+		DHF_Screen_Yatirimlar::render();
 	}
 
 	public function page_bilanco(): void {
